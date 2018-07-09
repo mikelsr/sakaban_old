@@ -15,18 +15,21 @@ const (
 	SummaryFile = "sakaban.json"
 )
 
+// Scanner will be used to scan a directory and generate File structs
 type Scanner struct {
 	Files []*fs.File
 }
 
+// Scan runs Scanner.VisitDir in path (root folder) and each subdirectory
 func (s *Scanner) Scan(path string) error {
-	if err := filepath.Walk(path, s.VisitDir); err != nil {
+	if err := filepath.Walk(path, s.Visit); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *Scanner) VisitDir(path string, f os.FileInfo, err error) error {
+// Visit creates a File when visiting a file and appends it to Summary.Files
+func (s *Scanner) Visit(path string, f os.FileInfo, err error) error {
 	if err != nil {
 		return err
 	}
