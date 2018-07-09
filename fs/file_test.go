@@ -19,7 +19,7 @@ func TestMakeFile(t *testing.T) {
 
 	// Incorrect file
 	if _, err = MakeFile(""); err == nil {
-		panic(fmt.Errorf("Built File from empty path"))
+		t.Fatalf("Built File from empty path")
 	}
 }
 
@@ -38,13 +38,13 @@ func TestFile_Slice(t *testing.T) {
 	blockN := CalcBlockN(file)
 
 	if len(blocks) != blockN {
-		panic(fmt.Errorf("Incorrect block number after slicing: got %d expected %d",
-			len(blocks), blockN))
+		t.Fatalf("Incorrect block number after slicing: got %d expected %d",
+			len(blocks), blockN)
 	}
 
 	// Incorrect file
 	f = &File{Path: ""}
 	if _, err := f.Slice(); err == nil {
-		panic(fmt.Errorf("Sliced non-existing file"))
+		t.Fatalf("Sliced non-existing file")
 	}
 }

@@ -32,12 +32,6 @@ func MakeFile(path string) (*File, error) {
 	return &f, nil
 }
 
-// Block contains a portion of a file and the hash corresponding to that portion
-type Block struct {
-	Hash    string
-	Content []byte
-}
-
 // Slice divides a file into Blocks
 func (f *File) Slice() ([]*Block, error) {
 	file, err := os.Open(f.Path)
@@ -57,7 +51,7 @@ func (f *File) Slice() ([]*Block, error) {
 			return nil, err
 		}
 		bytes = bytes[:n]
-		block := Block{Hash: "", Content: bytes}
+		block := Block{Content: bytes}
 		blocks = append(blocks, &block)
 	}
 	return blocks, nil
