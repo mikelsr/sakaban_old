@@ -29,7 +29,42 @@ func MakeFile(path string) (*File, error) {
 		return nil, fmt.Errorf("Not a valid path to a file: '%s'", path)
 	}
 	f := File{ID: id, Path: path}
+	blocks, _ := f.Slice()
+	f.Blocks = blocks
 	return &f, nil
+}
+
+// DeepEquals compares two files by individually comparing each byte of
+// it's blocks
+func (f *File) DeepEquals(f2 *File) bool {
+	if f == f2 {
+		return true
+	}
+	if len(f.Blocks) != len(f2.Blocks) {
+		return false
+	}
+	for i := 0; i < len(f.Blocks); i++ {
+		if f.Blocks[i].DeepEquals(f2.Blocks[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// Equals makes a shallow comparison between the hashes of the blocks of a file
+func (f *File) Equals(f2 *File) bool {
+	if f == f2 {
+		return true
+	}
+	if len(f.Blocks) != len(f2.Blocks) {
+		return false
+	}
+	for i := 0; i < len(f.Blocks); i++ {
+		if !f.Blocks[i].Equals(f2.Blocks[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 // Slice divides a file into Blocks
