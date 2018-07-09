@@ -10,10 +10,10 @@ func TestBlock_Equals(t *testing.T) {
 	b1 := Block{Content: []byte{1}}
 	b2 := Block{Content: []byte{1, 2}}
 	if !b1.Equals(&b1) {
-		t.Fail()
+		t.FailNow()
 	}
 	if b1.Equals(&b2) {
-		t.Fail()
+		t.FailNow()
 	}
 }
 
@@ -24,13 +24,13 @@ func TestBlock_DeepEquals(t *testing.T) {
 	b2 := Block{Content: []byte{1}}
 	b3 := Block{Content: []byte{1, 2}}
 	if !b1.DeepEquals(&b1) {
-		t.Fail()
+		t.FailNow()
 	}
 	if !b1.DeepEquals(&b2) {
-		t.Fail()
+		t.FailNow()
 	}
 	if b1.DeepEquals(&b3) {
-		t.Fail()
+		t.FailNow()
 	}
 }
 

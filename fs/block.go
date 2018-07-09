@@ -15,7 +15,10 @@ type Block struct {
 // DeepEquals compares the contents of the body of a block,
 // avoiding false positives caused by hash collisions
 func (b *Block) DeepEquals(b2 *Block) bool {
-	if !b.Equals(b2) {
+	if b == b2 {
+		return true
+	}
+	if b.Size() != b2.Size() {
 		return false
 	}
 	return bytes.Equal(b.Content, b2.Content)

@@ -30,10 +30,10 @@ func TestFile_DeepEquals(t *testing.T) {
 	f1, _ := MakeFile(muffinPath)
 	f2 := *f1
 	if !f1.DeepEquals(f1) {
-		t.Fail()
+		t.FailNow()
 	}
 	if !f1.DeepEquals(&f2) {
-		t.Fail()
+		t.FailNow()
 	}
 
 	// check that first and last block are not equal
@@ -41,14 +41,14 @@ func TestFile_DeepEquals(t *testing.T) {
 		// rearrange f2 blocks
 		f2.Blocks = append(f2.Blocks[1:], f2.Blocks[0])
 		if f1.DeepEquals(&f2) {
-			t.Fail()
+			t.FailNow()
 		}
 	}
 
 	// change amount of blocks
 	f2.Blocks = f2.Blocks[1:]
 	if len(f1.Blocks) > 1 && f1.DeepEquals(&f2) {
-		t.Fail()
+		t.FailNow()
 	}
 }
 
@@ -59,10 +59,10 @@ func TestFile_Equals(t *testing.T) {
 	f1, _ := MakeFile(muffinPath)
 	f2 := *f1
 	if !f1.Equals(f1) {
-		t.Fail()
+		t.FailNow()
 	}
 	if !f1.Equals(&f2) {
-		t.Fail()
+		t.FailNow()
 	}
 
 	// check that first and last block are not equal
@@ -70,14 +70,14 @@ func TestFile_Equals(t *testing.T) {
 		// rearrange f2 blocks
 		f2.Blocks = append(f2.Blocks[1:], f2.Blocks[0])
 		if f1.Equals(&f2) {
-			t.Fail()
+			t.FailNow()
 		}
 	}
 
 	// change amount of blocks
 	f2.Blocks = f2.Blocks[1:]
 	if len(f1.Blocks) > 1 && f1.Equals(&f2) {
-		t.Fail()
+		t.FailNow()
 	}
 }
 

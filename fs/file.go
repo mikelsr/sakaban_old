@@ -44,7 +44,7 @@ func (f *File) DeepEquals(f2 *File) bool {
 		return false
 	}
 	for i := 0; i < len(f.Blocks); i++ {
-		if f.Blocks[i].DeepEquals(f2.Blocks[i]) {
+		if !f.Blocks[i].DeepEquals(f2.Blocks[i]) {
 			return false
 		}
 	}
