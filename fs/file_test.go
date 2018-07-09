@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/satori/go.uuid"
 )
 
 var projectPath = fmt.Sprintf("%s/src/bitbucket.org/mikelsr/sakaban", os.Getenv("GOPATH"))
@@ -20,6 +22,78 @@ func TestMakeFile(t *testing.T) {
 	// Incorrect file
 	if _, err = MakeFile(""); err == nil {
 		t.Fatalf("Built File from empty path")
+	}
+}
+
+// TestMakeFileSummary checks the replicability of the
+// File->Summary->File->Summary construction cycle
+func TestMakeFileFromSummary(t *testing.T) {
+	f, _ := MakeFile(muffinPath)
+	parent, _ := uuid.NewV1()
+	f.Parent = &parent
+	fSum := MakeFileSummary(f)
+	f2, err := MakeFileFromSummary(fSum)
+	if err != nil {
+		t.FailNow()
+	}
+
+	// same FileSummary
+	fSum2 := MakeFileSummary(f2)
+	if !fSum.Is(fSum2) {
+		t.FailNow()
+	}
+
+	// different ID and amount of Blocks
+	f2.ID, _ = uuid.NewV1()
+	fSum2 = MakeFileSummary(f2)
+	fSum2.Blocks = []uint64{0, 1}
+	if fSum.Equals(fSum2) || fSum.Is(fSum2) {
+		t.FailNow()
+	}
+
+	// invalid ID
+	fSum2.ID = "invalid uuid"
+	_, err = MakeFileFromSummary(fSum2)
+	if err == nil {
+		t.FailNow()
+	}
+
+	// invalid parent ID
+	fSum2.ID = fSum2.Parent
+	fSum2.Parent = "invalid uuid"
+	_, err = MakeFileFromSummary(fSum2)
+	if err == nil {
+		t.FailNow()
+	}
+
+	// invalid path
+	fSum2.Parent = fSum2.ID
+	fSum2.Path = ""
+	_, err = MakeFileFromSummary(fSum2)
+	if err == nil {
+		t.FailNow()
+	}
+
+	// different blocks, same amount
+	fSum2 = MakeFileSummary(f)
+	fSum2.Blocks = make([]uint64, len(fSum.Blocks))
+	if fSum.Equals(fSum2) {
+		t.FailNow()
+	}
+}
+
+func TestMakeFileSummary(t *testing.T) {
+	f, _ := MakeFile(muffinPath)
+	fSum := MakeFileSummary(f)
+	if fSum.ID != f.ID.String() || fSum.Parent != "" {
+		t.FailNow()
+	}
+
+	parent, _ := uuid.NewV4()
+	f.Parent = &parent
+	fSum = MakeFileSummary(f)
+	if fSum.Parent != parent.String() {
+		t.FailNow()
 	}
 }
 
@@ -104,5 +178,13 @@ func TestFile_Slice(t *testing.T) {
 	f = &File{Path: ""}
 	if _, err := f.Slice(); err == nil {
 		t.Fatalf("Sliced non-existing file")
+	}
+}
+
+// TestFile_String only ensures that the generated string is not empty
+func TestFile_String(t *testing.T) {
+	f, _ := MakeFile(muffinPath)
+	if f.String() == "" {
+		t.FailNow()
 	}
 }

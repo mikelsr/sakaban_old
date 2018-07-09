@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -17,8 +18,17 @@ const BlockSize int64 = 1024 * 1024 // 1024 kB
 //	Blocks: Blocks that form the file
 type File struct {
 	ID     uuid.UUID
+	Parent *uuid.UUID
 	Path   string
 	Blocks []*Block
+}
+
+// FileSummary is used to marshal/unmarshal Files to/from JSON files
+type FileSummary struct {
+	ID     string   `json:"string"`
+	Parent string   `json:"string"`
+	Path   string   `json:"string"`
+	Blocks []uint64 `json:"number"`
 }
 
 // MakeFile is the default constructor for File
@@ -32,6 +42,42 @@ func MakeFile(path string) (*File, error) {
 	blocks, _ := f.Slice()
 	f.Blocks = blocks
 	return &f, nil
+}
+
+// MakeFileFromSummary creates a File given a FileSummary
+func MakeFileFromSummary(fSum *FileSummary) (*File, error) {
+	f, err := MakeFile(fSum.Path)
+	if err != nil {
+		return nil, err
+	}
+	f.ID, err = uuid.FromString(fSum.ID)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid ID: %s", fSum.ID)
+	}
+	if fSum.Parent != "" {
+		parent, err := uuid.FromString(fSum.Parent)
+		f.Parent = &parent
+		if err != nil {
+			return nil, fmt.Errorf("Invalid parent ID: %s", fSum.ID)
+		}
+	}
+	return f, nil
+}
+
+// MakeFileSummary creates a marshable FileSummary from a File
+func MakeFileSummary(f *File) *FileSummary {
+	var parent string
+	if f.Parent == nil {
+		parent = ""
+	} else {
+		parent = f.Parent.String()
+	}
+	fSum := FileSummary{ID: f.ID.String(), Parent: parent, Path: f.Path}
+	fSum.Blocks = make([]uint64, len(f.Blocks))
+	for i, b := range f.Blocks {
+		fSum.Blocks[i] = b.Hash()
+	}
+	return &fSum
 }
 
 // DeepEquals compares two files by individually comparing each byte of
@@ -52,6 +98,7 @@ func (f *File) DeepEquals(f2 *File) bool {
 }
 
 // Equals makes a shallow comparison between the hashes of the blocks of a file
+// It is used to compare the CONTENT of a file
 func (f *File) Equals(f2 *File) bool {
 	if f == f2 {
 		return true
@@ -90,4 +137,29 @@ func (f *File) Slice() ([]*Block, error) {
 		blocks = append(blocks, &block)
 	}
 	return blocks, nil
+}
+
+// Strings creates and marshals a FileSummary with f *File
+func (f *File) String() string {
+	fSum := MakeFileSummary(f)
+	s, _ := json.Marshal(fSum)
+	return string(s)
+}
+
+// Equals is used to compare both the CONTENT of a FileSummary
+func (fSum *FileSummary) Equals(fSum2 *FileSummary) bool {
+	if len(fSum.Blocks) != len(fSum2.Blocks) {
+		return false
+	}
+	for i, b := range fSum.Blocks {
+		if b != fSum2.Blocks[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// Is compares the ID, PARENT and CONTENT of a FileSummary
+func (fSum *FileSummary) Is(fSum2 *FileSummary) bool {
+	return fSum.ID == fSum2.ID && fSum.Parent == fSum2.Parent && fSum.Equals(fSum2)
 }
