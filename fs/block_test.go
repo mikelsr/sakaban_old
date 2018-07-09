@@ -4,6 +4,36 @@ import (
 	"testing"
 )
 
+// TestBlock_Equals makes a shallow comparison of a block with itself
+// and with a different block
+func TestBlock_Equals(t *testing.T) {
+	b1 := Block{Content: []byte{1}}
+	b2 := Block{Content: []byte{1, 2}}
+	if !b1.Equals(&b1) {
+		t.Fail()
+	}
+	if b1.Equals(&b2) {
+		t.Fail()
+	}
+}
+
+// TestBlock_DeepEquals compares the content of a Block with itself,
+// an equal block and a different block
+func TestBlock_DeepEquals(t *testing.T) {
+	b1 := Block{Content: []byte{1}}
+	b2 := Block{Content: []byte{1}}
+	b3 := Block{Content: []byte{1, 2}}
+	if !b1.DeepEquals(&b1) {
+		t.Fail()
+	}
+	if !b1.DeepEquals(&b2) {
+		t.Fail()
+	}
+	if b1.DeepEquals(&b3) {
+		t.Fail()
+	}
+}
+
 // TestBlock_Hash checks for hash collisions in different blocks
 func TestBlock_Hash(t *testing.T) {
 	// Contents of different lenght
