@@ -8,8 +8,7 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-var projectPath = fmt.Sprintf("%s/src/bitbucket.org/mikelsr/sakaban", os.Getenv("GOPATH"))
-var muffinPath = fmt.Sprintf("%s/res/muffin.jpg", projectPath)
+var muffinPath = fmt.Sprintf("%s/res/muffin.jpg", ProjectPath())
 
 // TestMakeFile builds File from a valid and an invalid path
 func TestMakeFile(t *testing.T) {
@@ -82,6 +81,7 @@ func TestMakeFileFromSummary(t *testing.T) {
 	}
 }
 
+// TestMakeFileSummary checks that a FileSummary is built properly from a File
 func TestMakeFileSummary(t *testing.T) {
 	f, _ := MakeFile(muffinPath)
 	fSum := MakeFileSummary(f)
