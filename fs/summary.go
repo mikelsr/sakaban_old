@@ -1,20 +1,22 @@
 package fs
 
 import (
-	"encoding/json"
 	"os"
+	"reflect"
 )
 
 // IndexedSummary stores multiple Summary structs indexed by path
 // TODO: fix path redundancy
 type IndexedSummary struct {
-	Files map[string]*Summary `json:"files"`
+	Files   map[string]*Summary `json:"files"`
+	Parents []*Summary          `json:"parents"`
 }
 
 // MakeIndexedSummary creates an IndexedSummary from a slice of summaries
 func MakeIndexedSummary(summaries ...*Summary) (*IndexedSummary, error) {
 	is := new(IndexedSummary)
 	is.Files = make(map[string]*Summary)
+	is.Parents = make([]*Summary, 0)
 	for _, s := range summaries {
 		if _, found := is.Files[s.Path]; found {
 			// repeated path
@@ -47,6 +49,42 @@ func (is *IndexedSummary) Delete(summaries ...*Summary) error {
 	return nil
 }
 
+// Update compares two IndexSummaries and returns the resulting IndexedSummary
+func (is *IndexedSummary) Update(newIS *IndexedSummary) *IndexedSummary {
+	u, _ := MakeIndexedSummary()
+	// look for old files
+	for path, s := range is.Files {
+		ns, found := newIS.Files[path]
+		// file may have been updated
+		if found {
+			if s.Equals(ns) { // File is equal
+				u.Add(ns)
+			} else { // File has been updated
+				// TODO: Allow record of child and parents in the same path
+				u.Add(&Summary{ID: ns.ID, Parent: s.ID, Path: path, Blocks: ns.Blocks})
+				u.Parents = append(u.Parents, s)
+			}
+		} else {
+			// comparing contents is slow
+			for _, ns := range newIS.Files {
+				// file has been moved
+				if reflect.DeepEqual(s.Blocks, ns.Blocks) {
+					u.Add(&Summary{ID: ns.ID, Parent: s.ID, Path: ns.Path, Blocks: ns.Blocks})
+					u.Parents = append(u.Parents, s)
+					break
+				}
+			}
+		}
+	}
+	// add missing (newly created) files
+	for path, s := range newIS.Files {
+		if _, found := u.Files[path]; !found {
+			u.Add(s)
+		}
+	}
+	return u
+}
+
 // Summary is used to marshal/unmarshal Files to/from JSON files
 type Summary struct {
 	ID     string   `json:"id"`
@@ -69,13 +107,6 @@ func MakeSummary(f *File) *Summary {
 		s.Blocks[i] = b.Hash()
 	}
 	return &s
-}
-
-// Strings creates and marshals a Summary with f *File
-func (f *File) String() string {
-	s := MakeSummary(f)
-	b, _ := json.Marshal(s)
-	return string(b)
 }
 
 // Equals is used to compare both the CONTENT of a Summary

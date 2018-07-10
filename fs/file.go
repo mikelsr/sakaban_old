@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -112,4 +113,11 @@ func (f *File) Slice() ([]*Block, error) {
 		blocks = append(blocks, &block)
 	}
 	return blocks, nil
+}
+
+// Strings creates and marshals a Summary with f *File
+func (f *File) String() string {
+	s := MakeSummary(f)
+	b, _ := json.Marshal(s)
+	return string(b)
 }

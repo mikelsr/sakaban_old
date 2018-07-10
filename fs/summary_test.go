@@ -76,3 +76,43 @@ func TestIndexedSummary_Delete(t *testing.T) {
 		t.FailNow()
 	}
 }
+
+// TestIndexedSummary_Update creates and updates an IndexedSummary,
+// checking the operations: change, move, delete, keep, create
+func TestIndexedSummary_Update(t *testing.T) {
+	is1, _ := MakeIndexedSummary()
+	is1.Add(&Summary{ID: "f1.0", Path: "/f1", Blocks: []uint64{1}},
+		&Summary{ID: "f2.0", Path: "/f2", Blocks: []uint64{2}},
+		&Summary{ID: "f3.0", Path: "/f3", Blocks: []uint64{3}},
+		&Summary{ID: "f4.0", Path: "/f4", Blocks: []uint64{4}})
+	is2, _ := MakeIndexedSummary()
+	is2.Files = make(map[string]*Summary)
+	is2.Add(&Summary{ID: "f1.1", Path: "/f1", Blocks: []uint64{11}}, // change
+		&Summary{ID: "f2.2", Path: "/n2", Blocks: []uint64{2}}, // move
+		&Summary{ID: "f4.0", Path: "/f4", Blocks: []uint64{4}}, // keep
+		&Summary{ID: "f5.0", Path: "/f5", Blocks: []uint64{4}}) // create
+
+	is3 := is1.Update(is2)
+
+	// change
+	if is3.Files["/f1"].Parent != is1.Files["/f1"].ID {
+		t.FailNow()
+	}
+	// move
+	if is3.Files["/n2"].Parent != is1.Files["/f2"].ID ||
+		is3.Files["/n2"].Path == is1.Files["/f2"].Path {
+		t.FailNow()
+	}
+	// delete
+	if _, found := is3.Files["/f3"]; found {
+		t.FailNow()
+	}
+	// keep
+	if !is3.Files["/f4"].Equals(is1.Files["/f4"]) {
+		t.FailNow()
+	}
+	// create
+	if _, found := is3.Files["/f5"]; !found {
+		t.FailNow()
+	}
+}
