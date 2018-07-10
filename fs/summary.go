@@ -9,14 +9,14 @@ import (
 // TODO: fix path redundancy
 type IndexedSummary struct {
 	Files   map[string]*Summary `json:"files"`
-	Parents []*Summary          `json:"parents"`
+	Parents map[string]*Summary `json:"parents"`
 }
 
 // MakeIndexedSummary creates an IndexedSummary from a slice of summaries
 func MakeIndexedSummary(summaries ...*Summary) (*IndexedSummary, error) {
 	is := new(IndexedSummary)
 	is.Files = make(map[string]*Summary)
-	is.Parents = make([]*Summary, 0)
+	is.Parents = make(map[string]*Summary)
 	for _, s := range summaries {
 		if _, found := is.Files[s.Path]; found {
 			// repeated path
@@ -38,6 +38,17 @@ func (is *IndexedSummary) Add(summaries ...*Summary) error {
 	return nil
 }
 
+// AddParent adds a new set of Summary to IndexedSummary.Parents
+func (is *IndexedSummary) AddParent(summaries ...*Summary) error {
+	for _, s := range summaries {
+		if _, found := is.Parents[s.ID]; found {
+			return os.ErrExist
+		}
+		is.Parents[s.ID] = s
+	}
+	return nil
+}
+
 // Delete removes a set of Summary from IndexedSummary.Files
 func (is *IndexedSummary) Delete(summaries ...*Summary) error {
 	for _, s := range summaries {
@@ -45,6 +56,18 @@ func (is *IndexedSummary) Delete(summaries ...*Summary) error {
 			return os.ErrNotExist
 		}
 		delete(is.Files, s.Path)
+	}
+	return nil
+}
+
+// DeleteParent removes a set of Summary from IndexedSummary.Parents
+// Not used
+func (is *IndexedSummary) DeleteParent(summaries ...*Summary) error {
+	for _, s := range summaries {
+		if _, found := is.Parents[s.ID]; !found {
+			return os.ErrNotExist
+		}
+		delete(is.Parents, s.ID)
 	}
 	return nil
 }
@@ -62,7 +85,7 @@ func (is *IndexedSummary) Update(newIS *IndexedSummary) *IndexedSummary {
 			} else { // File has been updated
 				// TODO: Allow record of child and parents in the same path
 				u.Add(&Summary{ID: ns.ID, Parent: s.ID, Path: path, Blocks: ns.Blocks})
-				u.Parents = append(u.Parents, s)
+				u.AddParent(s)
 			}
 		} else {
 			// comparing contents is slow
@@ -70,7 +93,7 @@ func (is *IndexedSummary) Update(newIS *IndexedSummary) *IndexedSummary {
 				// file has been moved
 				if reflect.DeepEqual(s.Blocks, ns.Blocks) {
 					u.Add(&Summary{ID: ns.ID, Parent: s.ID, Path: ns.Path, Blocks: ns.Blocks})
-					u.Parents = append(u.Parents, s)
+					u.AddParent(s)
 					break
 				}
 			}

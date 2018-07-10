@@ -61,6 +61,24 @@ func TestIndexedSummary_Add(t *testing.T) {
 	}
 }
 
+// TestIndexedSummary_AddParent adds a new and a repeated parent to the
+// IndexedSummary
+func TestIndexedSummary_AddParent(t *testing.T) {
+	f, _ := MakeFile(muffinPath)
+	s := MakeSummary(f)
+	is, _ := MakeIndexedSummary()
+	// new addition
+	err := is.AddParent(s)
+	if err != nil {
+		t.FailNow()
+	}
+	// repeated addition
+	err = is.AddParent(s)
+	if err == nil {
+		t.FailNow()
+	}
+}
+
 // TestIndexedSummary_Delete deletes an existing and a nonexisting summary
 // from the IndexedSummary
 func TestIndexedSummary_Delete(t *testing.T) {
@@ -72,6 +90,23 @@ func TestIndexedSummary_Delete(t *testing.T) {
 		t.FailNow()
 	}
 	err = is.Delete(s)
+	if err == nil {
+		t.FailNow()
+	}
+}
+
+// TestIndexedSummary_DeleteParent deletes an existing and a nonexisting parent
+// from the IndexedSummary
+func TestIndexedSummary_DeleteParent(t *testing.T) {
+	f, _ := MakeFile(muffinPath)
+	s := MakeSummary(f)
+	is, _ := MakeIndexedSummary()
+	is.AddParent(s)
+	err := is.DeleteParent(s)
+	if err != nil {
+		t.FailNow()
+	}
+	err = is.DeleteParent(s)
 	if err == nil {
 		t.FailNow()
 	}
