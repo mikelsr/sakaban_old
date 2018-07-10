@@ -17,7 +17,39 @@ const (
 
 // Scanner will be used to scan a directory and generate File structs
 type Scanner struct {
-	Files []*fs.File
+	Root string
+	// NewSummary lightens memory usage by avoiding storing
+	// files
+	NewSummary []*fs.FileSummary
+	// NewIndexedSummary will store the scanned summaries
+	NewIndexedSummary *fs.IndexedSummary
+	// NewIndexedSummary will store the read summaries
+	OldIndexedSummary *fs.IndexedSummary
+}
+
+// MakeScanner creates a new scanner, tries to read
+// OldIndexedSummary and create NewIndexedSummary
+func MakeScanner(root string) (*Scanner, error) {
+	s := new(Scanner)
+	s.Root = root
+	// Old IndexedSummary
+	if SummaryExists(root) {
+		oldIndex, err := ReadIndexedSummary(filepath.Join(root, SummaryDir, SummaryFile))
+		if err != nil {
+			return nil, err
+		}
+		s.OldIndexedSummary = oldIndex
+	} else {
+		s.OldIndexedSummary, _ = fs.MakeIndexedSummary()
+	}
+
+	// New IndexedSummary
+	err := s.Scan(root)
+	if err != nil {
+		return nil, err
+	}
+	s.NewIndexedSummary, _ = fs.MakeIndexedSummary(s.NewSummary...)
+	return s, nil
 }
 
 // Scan runs Scanner.VisitDir in path (root folder) and each subdirectory
@@ -38,7 +70,8 @@ func (s *Scanner) Visit(path string, f os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		s.Files = append(s.Files, file)
+		summary := fs.MakeFileSummary(file)
+		s.NewSummary = append(s.NewSummary, summary)
 	}
 	return nil
 }
