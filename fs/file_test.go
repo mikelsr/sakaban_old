@@ -97,6 +97,27 @@ func TestMakeFileSummary(t *testing.T) {
 	}
 }
 
+// TestMakeIndexedSummary gives a valid and an invalid set to the
+// IndexedSummary constructor
+func TestMakeIndexedSummary(t *testing.T) {
+	f, _ := MakeFile(muffinPath)
+	fSum1 := MakeFileSummary(f)
+	fSum2 := *fSum1
+	fSum2.Path = "/fSum2/Path"
+	is, err := MakeIndexedSummary(fSum1, &fSum2)
+	if err != nil {
+		t.FailNow()
+	}
+	if !is.Files[fSum1.Path].Equals(fSum1) {
+		t.FailNow()
+	}
+	fSum2.Path = fSum1.Path
+	_, err = MakeIndexedSummary(fSum1, &fSum2)
+	if err == nil {
+		t.FailNow()
+	}
+}
+
 // TestFile_DeepEquals makes a shallow comparison between a File with itself,
 // and another file with: the same blocks, different blocks, different number
 // of blocks
@@ -185,6 +206,40 @@ func TestFile_Slice(t *testing.T) {
 func TestFile_String(t *testing.T) {
 	f, _ := MakeFile(muffinPath)
 	if f.String() == "" {
+		t.FailNow()
+	}
+}
+
+// TestIndexedSummary_Add adds a new and a repeated summary to the
+// IndexedSummary
+func TestIndexedSummary_Add(t *testing.T) {
+	f, _ := MakeFile(muffinPath)
+	s := MakeFileSummary(f)
+	is, _ := MakeIndexedSummary()
+	// new addition
+	err := is.Add(s)
+	if err != nil {
+		t.FailNow()
+	}
+	// repeated addition
+	err = is.Add(s)
+	if err == nil {
+		t.FailNow()
+	}
+}
+
+// TestIndexedSummary_Delete deletes an existing and a nonexisting summary
+// from the IndexedSummary
+func TestIndexedSummary_Delete(t *testing.T) {
+	f, _ := MakeFile(muffinPath)
+	s := MakeFileSummary(f)
+	is, _ := MakeIndexedSummary(s)
+	err := is.Delete(s)
+	if err != nil {
+		t.FailNow()
+	}
+	err = is.Delete(s)
+	if err == nil {
 		t.FailNow()
 	}
 }

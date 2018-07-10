@@ -25,10 +25,16 @@ type File struct {
 
 // FileSummary is used to marshal/unmarshal Files to/from JSON files
 type FileSummary struct {
-	ID     string   `json:"string"`
-	Parent string   `json:"string"`
-	Path   string   `json:"string"`
-	Blocks []uint64 `json:"number"`
+	ID     string   `json:"id"`
+	Parent string   `json:"parent"`
+	Path   string   `json:"path"`
+	Blocks []uint64 `json:"blocks"`
+}
+
+// IndexedSummary stores multiple FileSummary structs indexed by path
+// TODO: remove path redundancy
+type IndexedSummary struct {
+	Files map[string]*FileSummary `json:"files"`
 }
 
 // MakeFile is the default constructor for File
@@ -78,6 +84,20 @@ func MakeFileSummary(f *File) *FileSummary {
 		fSum.Blocks[i] = b.Hash()
 	}
 	return &fSum
+}
+
+// MakeIndexedSummary creates an IndexedSummary from a slice of summaries
+func MakeIndexedSummary(summaries ...*FileSummary) (*IndexedSummary, error) {
+	is := new(IndexedSummary)
+	is.Files = make(map[string]*FileSummary)
+	for _, s := range summaries {
+		if _, found := is.Files[s.Path]; found {
+			// repeated path
+			return nil, os.ErrExist
+		}
+		is.Files[s.Path] = s
+	}
+	return is, nil
 }
 
 // DeepEquals compares two files by individually comparing each byte of
@@ -162,4 +182,26 @@ func (fSum *FileSummary) Equals(fSum2 *FileSummary) bool {
 // Is compares the ID, PARENT and CONTENT of a FileSummary
 func (fSum *FileSummary) Is(fSum2 *FileSummary) bool {
 	return fSum.ID == fSum2.ID && fSum.Parent == fSum2.Parent && fSum.Equals(fSum2)
+}
+
+// Add adds a new set of FileSummary to IndexedSummary.Files
+func (is *IndexedSummary) Add(summaries ...*FileSummary) error {
+	for _, s := range summaries {
+		if _, found := is.Files[s.Path]; found {
+			return os.ErrExist
+		}
+		is.Files[s.Path] = s
+	}
+	return nil
+}
+
+// Delete removes a set of FileSummary from IndexedSummary.Files
+func (is *IndexedSummary) Delete(summaries ...*FileSummary) error {
+	for _, s := range summaries {
+		if _, found := is.Files[s.Path]; !found {
+			return os.ErrNotExist
+		}
+		delete(is.Files, s.Path)
+	}
+	return nil
 }
