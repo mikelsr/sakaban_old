@@ -42,7 +42,7 @@ func TestWriteIndexedSummary(t *testing.T) {
 	s := new(Scanner)
 	s.Scan(testDir)
 	var err error
-	s.NewIndexedSummary, err = fs.MakeIndexedSummary(s.NewSummary...)
+	s.NewIndexedSummary, err = fs.MakeIndexedSummary(s.Summaries...)
 	if err != nil {
 		t.Fatal(err)
 		// t.Fail()
