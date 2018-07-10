@@ -24,96 +24,59 @@ func TestMakeFile(t *testing.T) {
 	}
 }
 
-// TestMakeFileSummary checks the replicability of the
+// TestMakeSummary checks the replicability of the
 // File->Summary->File->Summary construction cycle
 func TestMakeFileFromSummary(t *testing.T) {
 	f, _ := MakeFile(muffinPath)
 	parent, _ := uuid.NewV1()
 	f.Parent = &parent
-	fSum := MakeFileSummary(f)
-	f2, err := MakeFileFromSummary(fSum)
+	s := MakeSummary(f)
+	f2, err := MakeFileFromSummary(s)
 	if err != nil {
 		t.FailNow()
 	}
 
-	// same FileSummary
-	fSum2 := MakeFileSummary(f2)
-	if !fSum.Is(fSum2) {
+	// same Summary
+	s2 := MakeSummary(f2)
+	if !s.Is(s2) {
 		t.FailNow()
 	}
 
 	// different ID and amount of Blocks
 	f2.ID, _ = uuid.NewV1()
-	fSum2 = MakeFileSummary(f2)
-	fSum2.Blocks = []uint64{0, 1}
-	if fSum.Equals(fSum2) || fSum.Is(fSum2) {
+	s2 = MakeSummary(f2)
+	s2.Blocks = []uint64{0, 1}
+	if s.Equals(s2) || s.Is(s2) {
 		t.FailNow()
 	}
 
 	// invalid ID
-	fSum2.ID = "invalid uuid"
-	_, err = MakeFileFromSummary(fSum2)
+	s2.ID = "invalid uuid"
+	_, err = MakeFileFromSummary(s2)
 	if err == nil {
 		t.FailNow()
 	}
 
 	// invalid parent ID
-	fSum2.ID = fSum2.Parent
-	fSum2.Parent = "invalid uuid"
-	_, err = MakeFileFromSummary(fSum2)
+	s2.ID = s2.Parent
+	s2.Parent = "invalid uuid"
+	_, err = MakeFileFromSummary(s2)
 	if err == nil {
 		t.FailNow()
 	}
 
 	// invalid path
-	fSum2.Parent = fSum2.ID
-	fSum2.Path = ""
-	_, err = MakeFileFromSummary(fSum2)
+	s2.Parent = s2.ID
+	s2.Path = ""
+	_, err = MakeFileFromSummary(s2)
 	if err == nil {
 		t.FailNow()
 	}
 
 	// different blocks, same amount
-	fSum2 = MakeFileSummary(f)
-	fSum2.Blocks = make([]uint64, len(fSum.Blocks))
-	if fSum.Equals(fSum2) {
-		t.FailNow()
-	}
-}
-
-// TestMakeFileSummary checks that a FileSummary is built properly from a File
-func TestMakeFileSummary(t *testing.T) {
-	f, _ := MakeFile(muffinPath)
-	fSum := MakeFileSummary(f)
-	if fSum.ID != f.ID.String() || fSum.Parent != "" {
-		t.FailNow()
-	}
-
-	parent, _ := uuid.NewV4()
-	f.Parent = &parent
-	fSum = MakeFileSummary(f)
-	if fSum.Parent != parent.String() {
-		t.FailNow()
-	}
-}
-
-// TestMakeIndexedSummary gives a valid and an invalid set to the
-// IndexedSummary constructor
-func TestMakeIndexedSummary(t *testing.T) {
-	f, _ := MakeFile(muffinPath)
-	fSum1 := MakeFileSummary(f)
-	fSum2 := *fSum1
-	fSum2.Path = "/fSum2/Path"
-	is, err := MakeIndexedSummary(fSum1, &fSum2)
-	if err != nil {
-		t.FailNow()
-	}
-	if !is.Files[fSum1.Path].Equals(fSum1) {
-		t.FailNow()
-	}
-	fSum2.Path = fSum1.Path
-	_, err = MakeIndexedSummary(fSum1, &fSum2)
-	if err == nil {
+	s2 = MakeSummary(f)
+	s2.Blocks = make([]uint64, len(s.Blocks))
+	if s.Equals(s2) {
 		t.FailNow()
 	}
 }
@@ -206,40 +169,6 @@ func TestFile_Slice(t *testing.T) {
 func TestFile_String(t *testing.T) {
 	f, _ := MakeFile(muffinPath)
 	if f.String() == "" {
-		t.FailNow()
-	}
-}
-
-// TestIndexedSummary_Add adds a new and a repeated summary to the
-// IndexedSummary
-func TestIndexedSummary_Add(t *testing.T) {
-	f, _ := MakeFile(muffinPath)
-	s := MakeFileSummary(f)
-	is, _ := MakeIndexedSummary()
-	// new addition
-	err := is.Add(s)
-	if err != nil {
-		t.FailNow()
-	}
-	// repeated addition
-	err = is.Add(s)
-	if err == nil {
-		t.FailNow()
-	}
-}
-
-// TestIndexedSummary_Delete deletes an existing and a nonexisting summary
-// from the IndexedSummary
-func TestIndexedSummary_Delete(t *testing.T) {
-	f, _ := MakeFile(muffinPath)
-	s := MakeFileSummary(f)
-	is, _ := MakeIndexedSummary(s)
-	err := is.Delete(s)
-	if err != nil {
-		t.FailNow()
-	}
-	err = is.Delete(s)
-	if err == nil {
 		t.FailNow()
 	}
 }
