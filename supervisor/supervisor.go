@@ -18,9 +18,9 @@ const (
 // Scanner will be used to scan a directory and generate File structs
 type Scanner struct {
 	Root string
-	// NewSummary lightens memory usage by avoiding storing
+	// Summaries lightens memory usage by avoiding storing
 	// files
-	NewSummary []*fs.FileSummary
+	Summaries []*fs.Summary
 	// NewIndexedSummary will store the scanned summaries
 	NewIndexedSummary *fs.IndexedSummary
 	// NewIndexedSummary will store the read summaries
@@ -48,7 +48,7 @@ func MakeScanner(root string) (*Scanner, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.NewIndexedSummary, _ = fs.MakeIndexedSummary(s.NewSummary...)
+	s.NewIndexedSummary, _ = fs.MakeIndexedSummary(s.Summaries...)
 	return s, nil
 }
 
@@ -70,8 +70,8 @@ func (s *Scanner) Visit(path string, f os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		summary := fs.MakeFileSummary(file)
-		s.NewSummary = append(s.NewSummary, summary)
+		summary := fs.MakeSummary(file)
+		s.Summaries = append(s.Summaries, summary)
 	}
 	return nil
 }

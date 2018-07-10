@@ -66,7 +66,7 @@ func TestScanner_Scan(t *testing.T) {
 	scanner := new(Scanner)
 	scanner.Scan(resFolder)
 	resFiles, _ := ioutil.ReadDir(resFolder)
-	if len(scanner.NewSummary) != len(resFiles) {
+	if len(scanner.Summaries) != len(resFiles) {
 		t.FailNow()
 	}
 
