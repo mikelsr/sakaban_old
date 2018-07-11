@@ -78,6 +78,7 @@ func (is *IndexedSummary) DeleteParent(summaries ...*Summary) error {
 func (is *IndexedSummary) Update(newIS *IndexedSummary) *IndexedSummary {
 	u, _ := MakeIndexedSummary()
 	// look for old files
+Lookup:
 	for path, s := range is.Files {
 		ns, found := newIS.Files[path]
 		// file may have been updated
@@ -96,7 +97,7 @@ func (is *IndexedSummary) Update(newIS *IndexedSummary) *IndexedSummary {
 				if reflect.DeepEqual(s.Blocks, ns.Blocks) {
 					u.Add(&Summary{ID: ns.ID, Parent: s.ID, Path: ns.Path, Blocks: ns.Blocks})
 					u.AddParent(s)
-					break
+					continue Lookup
 				}
 			}
 			// file deleted
