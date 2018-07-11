@@ -1,7 +1,6 @@
 package fs
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/satori/go.uuid"
@@ -143,8 +142,6 @@ func TestIndexedSummary_Update(t *testing.T) {
 	if _, found := is3.Files["/f3"]; found {
 		t.FailNow()
 	}
-	fmt.Println(is3.Parents)
-	fmt.Println(is3.Deletions)
 	if _, found := is3.Deletions["f3.0"]; !found {
 		t.FailNow()
 	}

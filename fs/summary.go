@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 )
@@ -51,6 +52,17 @@ func (is *IndexedSummary) AddParent(summaries ...*Summary) error {
 	return nil
 }
 
+// Contains compares the hashes of the blocks of a file with the summaries in
+// IndexedSummary.Files and returns (path to the file, found/not found)
+func (is *IndexedSummary) Contains(s *Summary) (string, bool) {
+	for path, s2 := range is.Files {
+		if s.Equals(s2) {
+			return path, true
+		}
+	}
+	return "", false
+}
+
 // Delete removes a set of Summary from IndexedSummary.Files
 func (is *IndexedSummary) Delete(summaries ...*Summary) error {
 	for _, s := range summaries {
@@ -74,7 +86,47 @@ func (is *IndexedSummary) DeleteParent(summaries ...*Summary) error {
 	return nil
 }
 
-// Update compares two IndexSummaries and returns the resulting IndexedSummary
+// Merge compares a summary of a local and a remote directory
+// TODO
+func (is *IndexedSummary) Merge(newIS *IndexedSummary) *IndexedSummary {
+	m, _ := MakeIndexedSummary()
+Lookup:
+	for path, s := range is.Files {
+		if ns, found := newIS.Files[path]; found {
+			// same file
+			if s.ID == ns.ID {
+				m.Add(s)
+				continue Lookup
+			}
+			// branches of the same file
+			if commonRoot(s, ns, is.Parents, newIS.Parents) {
+				s1 := *s
+				s2 := *ns
+				s1.Path = fmt.Sprintf("%s_%s", s.Path, s.ID)
+				s2.Path = fmt.Sprintf("%s_%s", ns.Path, ns.ID)
+				m.Add(&s1, &s2)
+				continue Lookup
+			}
+		} else {
+
+		}
+	}
+
+	// deletions
+	for id := range newIS.Deletions {
+		if s, deleted := is.Deletions[id]; !deleted {
+			if s, found := is.Files[s.Path]; found && s.ID == id {
+				// TODO: change IndexedSummary.Delete
+				// delete file
+				m.Deletions[id] = s
+			}
+		}
+	}
+	return m
+}
+
+// Update compares two IndexSummaries from the same local directory
+// and returns the resulting IndexedSummary
 func (is *IndexedSummary) Update(newIS *IndexedSummary) *IndexedSummary {
 	u, _ := MakeIndexedSummary()
 	// look for old files
