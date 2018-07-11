@@ -26,7 +26,7 @@ func ReadIndexedSummary(filename string) (*fs.IndexedSummary, error) {
 // the file specified by the path
 func WriteIndexedSummary(summary *fs.IndexedSummary, filename string) error {
 	content, _ := json.Marshal(summary)
-	err := ioutil.WriteFile(filename, content, 0777)
+	err := ioutil.WriteFile(filename, content, 0755)
 	if err != nil {
 		return err
 	}

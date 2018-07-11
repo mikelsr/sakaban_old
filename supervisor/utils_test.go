@@ -23,7 +23,7 @@ func TestReadIndexedSummary(t *testing.T) {
 	}
 
 	// read existing, invalid file
-	ioutil.WriteFile(filename, []byte{42}, 0777)
+	ioutil.WriteFile(filename, []byte{42}, 0755)
 	_, err = ReadIndexedSummary(filename)
 	if err == nil {
 		t.FailNow()
