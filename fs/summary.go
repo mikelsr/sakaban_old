@@ -8,8 +8,9 @@ import (
 // IndexedSummary stores multiple Summary structs indexed by path
 // TODO: fix path redundancy
 type IndexedSummary struct {
-	Files   map[string]*Summary `json:"files"`
-	Parents map[string]*Summary `json:"parents"`
+	Files     map[string]*Summary `json:"files"`
+	Parents   map[string]*Summary `json:"parents"`
+	Deletions map[string]*Summary `json:"deletions"`
 }
 
 // MakeIndexedSummary creates an IndexedSummary from a slice of summaries
@@ -17,6 +18,7 @@ func MakeIndexedSummary(summaries ...*Summary) (*IndexedSummary, error) {
 	is := new(IndexedSummary)
 	is.Files = make(map[string]*Summary)
 	is.Parents = make(map[string]*Summary)
+	is.Deletions = make(map[string]*Summary)
 	for _, s := range summaries {
 		if _, found := is.Files[s.Path]; found {
 			// repeated path
@@ -97,6 +99,8 @@ func (is *IndexedSummary) Update(newIS *IndexedSummary) *IndexedSummary {
 					break
 				}
 			}
+			// file deleted
+			u.Deletions[s.ID] = s
 		}
 	}
 	// add missing (newly created) files
