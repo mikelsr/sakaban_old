@@ -29,7 +29,7 @@ func TestMain(m *testing.M) {
 func TestMakeScanner(t *testing.T) {
 	filename := filepath.Join(testDir, "MakeScanner", SummaryDir, SummaryFile)
 	unitTestDir := filepath.Join(testDir, "MakeScanner")
-	os.MkdirAll(filepath.Join(unitTestDir, SummaryDir), 0777)
+	os.MkdirAll(filepath.Join(unitTestDir, SummaryDir), 0755)
 	// scanner with no old indexed summary
 	s, err := MakeScanner(filepath.Join(fs.ProjectPath(), "res"))
 	if err != nil {
@@ -43,7 +43,7 @@ func TestMakeScanner(t *testing.T) {
 	}
 
 	// existing but incorrect old indexed summary
-	ioutil.WriteFile(filename, []byte{42}, 0777)
+	ioutil.WriteFile(filename, []byte{42}, 0755)
 	_, err = MakeScanner(unitTestDir)
 	if err == nil {
 		t.FailNow()
@@ -83,12 +83,12 @@ func TestSummaryExists(t *testing.T) {
 	if SummaryExists(testDir) {
 		t.FailNow()
 	}
-	err := os.MkdirAll(filepath.Join(testDir, SummaryDir), 0777)
+	err := os.MkdirAll(filepath.Join(testDir, SummaryDir), 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
 	_, err = os.OpenFile(filepath.Join(testDir, SummaryDir, SummaryFile),
-		os.O_RDWR|os.O_CREATE, 0777)
+		os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
