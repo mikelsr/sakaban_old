@@ -28,10 +28,20 @@ func commonRoot(s1 *Summary, s2 *Summary, parents map[string]*Summary) bool {
 		return true
 	}
 
+	if s1.Parent == "" || s2.Parent == "" {
+		return false
+	}
+
 	// store the line of s1 in a "set"
+	if _, found := parents[s1.Parent]; !found {
+		return false
+	}
 	p := parents[s1.Parent].Parent
 	for p != "" {
 		parentSet[p] = true
+		if _, found := parents[s1.Parent]; !found {
+			return false
+		}
 		p = parents[p].Parent
 	}
 
@@ -39,6 +49,9 @@ func commonRoot(s1 *Summary, s2 *Summary, parents map[string]*Summary) bool {
 	for p != "" {
 		if _, found := parentSet[p]; found {
 			return true
+		}
+		if _, found := parents[p]; !found {
+			return false
 		}
 		p = parents[p].Parent
 	}

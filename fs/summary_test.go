@@ -1,7 +1,6 @@
 package fs
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/satori/go.uuid"
@@ -16,7 +15,7 @@ func TestMakeIndexedSummary(t *testing.T) {
 	s2.Path = "/s2/Path"
 	is, err := MakeIndexedSummary(s1, &s2)
 	if err != nil {
-		t.FailNow()
+		t.Fatal(err)
 	}
 	if !is.Files[s1.Path].Equals(s1) {
 		t.FailNow()
@@ -53,7 +52,7 @@ func TestIndexedSummary_Add(t *testing.T) {
 	// new addition
 	err := is.Add(s)
 	if err != nil {
-		t.FailNow()
+		t.Fatal(err)
 	}
 	// repeated addition
 	err = is.Add(s)
@@ -71,7 +70,7 @@ func TestIndexedSummary_AddParent(t *testing.T) {
 	// new addition
 	err := is.AddParent(s)
 	if err != nil {
-		t.FailNow()
+		t.Fatal(err)
 	}
 	// repeated addition
 	err = is.AddParent(s)
@@ -113,7 +112,7 @@ func TestIndexedSummary_Delete(t *testing.T) {
 	is, _ := MakeIndexedSummary(s)
 	err := is.Delete(s)
 	if err != nil {
-		t.FailNow()
+		t.Fatal(err)
 	}
 	err = is.Delete(s)
 	if err == nil {
@@ -130,7 +129,7 @@ func TestIndexedSummary_DeleteParent(t *testing.T) {
 	is.AddParent(s)
 	err := is.DeleteParent(s)
 	if err != nil {
-		t.FailNow()
+		t.Fatal(err)
 	}
 	err = is.DeleteParent(s)
 	if err == nil {
@@ -190,21 +189,27 @@ func TestIndexedSummary_Update(t *testing.T) {
 //	Delete a file in one branch, edit it in another
 //	Delete a file in one branch, move it in another
 func TestMerge(t *testing.T) {
-	is1, _ := MakeIndexedSummary()
-	is2, _ := MakeIndexedSummary()
+	testMerge1(t) // no changes
+	testMerge2(t) // two branches of a same file
+	testMerge3(t) // edit a file in one branch, move it in the other
+	testMerge4(t) // delete a file
+	testMerge5(t) // delete a file in one branch, edit it in another
+	testMerge6(t) // delete a file in one branch, move it in another
+}
 
+// testMerge1 merges the same file
+func testMerge1(t *testing.T) {
 	id, _ := uuid.NewV4()
 	f1_0ab := &File{ID: id, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0}}}}
-
 	s1_0ab := MakeSummary(f1_0ab)
 
-	is1.Add(s1_0ab)
-	is2.Add(s1_0ab)
+	is1, _ := MakeIndexedSummary(s1_0ab)
+	is2, _ := MakeIndexedSummary(s1_0ab)
 
 	// equal summaries
 	is3, err := Merge(is1, is2)
 	if err != nil {
-		t.FailNow()
+		t.Fatal(err)
 	}
 	if len(is3.Files) != 1 || len(is3.Parents) != 0 || len(is3.Deletions) != 0 {
 		t.FailNow()
@@ -213,8 +218,14 @@ func TestMerge(t *testing.T) {
 	if !is3.Files[s1_0ab.Path].Equals(s1_0ab) {
 		t.FailNow()
 	}
+}
 
-	// branches of a same file
+// testMerge2 merges different branches of a same file
+func testMerge2(t *testing.T) {
+	id, _ := uuid.NewV4()
+	f1_0ab := &File{ID: id, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0}}}}
+	s1_0ab := MakeSummary(f1_0ab)
+
 	id, _ = uuid.NewV4()
 	f1_1a := &File{ID: id, Parent: f1_0ab.ID, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0, 1}}}}
 	id, _ = uuid.NewV4()
@@ -226,18 +237,124 @@ func TestMerge(t *testing.T) {
 	s1_2a := MakeSummary(f1_2a)
 	s1_1b := MakeSummary(f1_1b)
 
-	is1, _ = MakeIndexedSummary(s1_2a)
-	is2, _ = MakeIndexedSummary(s1_1b)
+	is1, _ := MakeIndexedSummary(s1_2a)
+	is2, _ := MakeIndexedSummary(s1_1b)
 	is1.AddParent(s1_0ab, s1_1a)
 	is2.AddParent(s1_0ab)
 
-	is3, err = Merge(is1, is2)
+	is3, err := Merge(is1, is2)
 	if err != nil {
-		t.FailNow()
+		t.Fatal(err)
 	}
 	if len(is3.Files) != 2 || len(is3.Parents) != 2 || len(is3.Deletions) != 0 {
-		fmt.Println(is3)
 		t.FailNow()
 	}
+}
 
+// testMerge3 merges an edited and a moved branch of a file
+func testMerge3(t *testing.T) {
+	id, _ := uuid.NewV4()
+	f1_0ab := &File{ID: id, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0}}}}
+	s1_0ab := MakeSummary(f1_0ab)
+
+	id, _ = uuid.NewV4()
+	f1_1a := &File{ID: id, Parent: f1_0ab.ID, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0, 1}}}}
+	id, _ = uuid.NewV4()
+	f1_2a := &File{ID: id, Parent: f1_1a.ID, Path: "/path_2", Blocks: []*Block{&Block{Content: []byte{0, 1}}}}
+	id, _ = uuid.NewV4()
+	f1_1b := &File{ID: id, Parent: f1_0ab.ID, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0, 2}}}}
+
+	s1_1a := MakeSummary(f1_1a)
+	s1_2a := MakeSummary(f1_2a)
+	s1_1b := MakeSummary(f1_1b)
+
+	is1, _ := MakeIndexedSummary(s1_2a)
+	is2, _ := MakeIndexedSummary(s1_1b)
+	is1.AddParent(s1_0ab, s1_1a)
+	is2.AddParent(s1_0ab)
+
+	is3, err := Merge(is1, is2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(is3.Files) != 2 || len(is3.Parents) != 2 || len(is3.Deletions) != 0 {
+		t.FailNow()
+	}
+	if _, found := is3.Files[s1_2a.Path]; !found {
+		t.FailNow()
+	}
+}
+
+// testMerge4 creates a file in both branches and deletes it in one of them
+func testMerge4(t *testing.T) {
+	id, _ := uuid.NewV4()
+	f1 := &File{ID: id, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0}}}}
+	s1 := MakeSummary(f1)
+
+	is1, _ := MakeIndexedSummary(s1)
+	is2, _ := MakeIndexedSummary()
+	// TODO: deletion function for IndexedSummary struct
+	is2.Deletions[s1.ID] = s1
+
+	is3, err := Merge(is1, is2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(is3.Files) != 0 || len(is3.Parents) != 0 || len(is3.Deletions) != 1 {
+		t.FailNow()
+	}
+}
+
+// testMerge5 deletes a file in one branch, edits it in another
+func testMerge5(t *testing.T) {
+	id, _ := uuid.NewV4()
+	f1_0 := &File{ID: id, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0}}}}
+	id, _ = uuid.NewV4()
+	f1_1 := &File{ID: id, Parent: f1_0.ID, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{1}}}}
+	id, _ = uuid.NewV4()
+	f1_2 := &File{ID: id, Parent: f1_1.ID, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{2}}}}
+	s1_0 := MakeSummary(f1_0)
+	s1_1 := MakeSummary(f1_1)
+	s1_2 := MakeSummary(f1_2)
+
+	is1, _ := MakeIndexedSummary(s1_2)
+	is2, _ := MakeIndexedSummary()
+
+	is1.AddParent(s1_0, s1_1)
+	is2.Deletions[s1_0.ID] = s1_0
+
+	is3, err := Merge(is1, is2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(is3.Files) != 1 || len(is3.Parents) != 2 || len(is3.Deletions) != 0 {
+		t.FailNow()
+	}
+}
+
+// testMerge6 deletes a file in one branch, moves it in another
+func testMerge6(t *testing.T) {
+	id, _ := uuid.NewV4()
+	f1_0 := &File{ID: id, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0}}}}
+	id, _ = uuid.NewV4()
+	f1_1 := &File{ID: id, Parent: f1_0.ID, Path: "/path_2", Blocks: []*Block{&Block{Content: []byte{0}}}}
+	id, _ = uuid.NewV4()
+	f1_2 := &File{ID: id, Parent: f1_1.ID, Path: "/path_3", Blocks: []*Block{&Block{Content: []byte{0}}}}
+	s1_0 := MakeSummary(f1_0)
+	s1_1 := MakeSummary(f1_1)
+	s1_2 := MakeSummary(f1_2)
+
+	is1, _ := MakeIndexedSummary(s1_2)
+	is2, _ := MakeIndexedSummary()
+
+	is1.AddParent(s1_0, s1_1)
+	is2.Deletions[s1_0.ID] = s1_0
+
+	is3, err := Merge(is1, is2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(is3.Files) != 1 || len(is3.Parents) != 2 || len(is3.Deletions) != 0 {
+		t.FailNow()
+	}
 }

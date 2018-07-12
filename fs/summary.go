@@ -144,6 +144,13 @@ func Merge(is1 *IndexedSummary, is2 *IndexedSummary) (*IndexedSummary, error) {
 	// merge deletions
 	m.Deletions, _ = mergeSummaryMap(true, is1.Deletions, is2.Deletions)
 
+	// filter misdeletions out
+	for id := range m.Parents {
+		if _, found := m.Deletions[id]; found {
+			delete(m.Deletions, id)
+		}
+	}
+
 	for path, s := range is1.Files {
 		if ns, found := is2.Files[path]; found {
 			// same file

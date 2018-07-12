@@ -15,7 +15,7 @@ func TestMakeFile(t *testing.T) {
 	// Correct file
 	_, err := MakeFile(muffinPath)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	// Incorrect file
@@ -33,7 +33,7 @@ func TestMakeFileFromSummary(t *testing.T) {
 	s := MakeSummary(f)
 	f2, err := MakeFileFromSummary(s)
 	if err != nil {
-		t.FailNow()
+		t.Fatal(err)
 	}
 
 	// same Summary
@@ -146,7 +146,7 @@ func TestFile_Slice(t *testing.T) {
 	f, _ := MakeFile(muffinPath)
 	blocks, err := f.Slice()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	// Check that the file is sliced into the correct
 	// amount of blocks
