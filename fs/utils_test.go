@@ -55,7 +55,7 @@ func TestCommonRoot(t *testing.T) {
 
 // TestDescendant creates summaries and lines and checks that the verification
 // is correct
-func TestDescendant(t *testing.T) {
+func TestIsDescendant(t *testing.T) {
 	// f1 -> f2 -> f3
 	id, _ := uuid.NewV4()
 	f1 := &File{ID: id}

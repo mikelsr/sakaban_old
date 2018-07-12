@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/satori/go.uuid"
@@ -178,4 +179,65 @@ func TestIndexedSummary_Update(t *testing.T) {
 	if _, found := is3.Files["/f5"]; !found {
 		t.FailNow()
 	}
+}
+
+// TestMerge checks that the following merge operations are successfully carried
+// out:
+//	No changes
+//	Two branches of a same file
+//	Edit a file in one branch, move it in the other
+//	Delete a file
+//	Delete a file in one branch, edit it in another
+//	Delete a file in one branch, move it in another
+func TestMerge(t *testing.T) {
+	is1, _ := MakeIndexedSummary()
+	is2, _ := MakeIndexedSummary()
+
+	id, _ := uuid.NewV4()
+	f1_0ab := &File{ID: id, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0}}}}
+
+	s1_0ab := MakeSummary(f1_0ab)
+
+	is1.Add(s1_0ab)
+	is2.Add(s1_0ab)
+
+	// equal summaries
+	is3, err := Merge(is1, is2)
+	if err != nil {
+		t.FailNow()
+	}
+	if len(is3.Files) != 1 || len(is3.Parents) != 0 || len(is3.Deletions) != 0 {
+		t.FailNow()
+	}
+
+	if !is3.Files[s1_0ab.Path].Equals(s1_0ab) {
+		t.FailNow()
+	}
+
+	// branches of a same file
+	id, _ = uuid.NewV4()
+	f1_1a := &File{ID: id, Parent: f1_0ab.ID, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0, 1}}}}
+	id, _ = uuid.NewV4()
+	f1_2a := &File{ID: id, Parent: f1_1a.ID, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0, 1}}}}
+	id, _ = uuid.NewV4()
+	f1_1b := &File{ID: id, Parent: f1_0ab.ID, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0, 2}}}}
+
+	s1_1a := MakeSummary(f1_1a)
+	s1_2a := MakeSummary(f1_2a)
+	s1_1b := MakeSummary(f1_1b)
+
+	is1, _ = MakeIndexedSummary(s1_2a)
+	is2, _ = MakeIndexedSummary(s1_1b)
+	is1.AddParent(s1_0ab, s1_1a)
+	is2.AddParent(s1_0ab)
+
+	is3, err = Merge(is1, is2)
+	if err != nil {
+		t.FailNow()
+	}
+	if len(is3.Files) != 2 || len(is3.Parents) != 2 || len(is3.Deletions) != 0 {
+		fmt.Println(is3)
+		t.FailNow()
+	}
+
 }

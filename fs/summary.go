@@ -130,6 +130,7 @@ Lookup:
 }
 
 // Merge compares a summary of a local and a remote directory
+// This function should return the same summary switching s1 and s2
 func Merge(is1 *IndexedSummary, is2 *IndexedSummary) (*IndexedSummary, error) {
 	m, _ := MakeIndexedSummary()
 
@@ -147,6 +148,15 @@ func Merge(is1 *IndexedSummary, is2 *IndexedSummary) (*IndexedSummary, error) {
 		if ns, found := is2.Files[path]; found {
 			// same file
 			if s.ID == ns.ID {
+				m.Add(s)
+				continue
+			}
+
+			if isDescendant(s, ns, is1.Parents) {
+				m.Add(ns)
+				continue
+			}
+			if isDescendant(ns, s, is2.Parents) {
 				m.Add(s)
 				continue
 			}
