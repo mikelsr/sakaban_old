@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"errors"
 	"fmt"
 	"os"
 )
@@ -18,8 +19,9 @@ func CalcBlockN(f os.FileInfo) int {
 // commonRoot iteratively checks if the files have a common ancestor
 // Time complexity (quick case aside): best -> O(n), worst -> O(n+m)
 // Space complexity: best == worst -> O(n)
-func commonRoot(s1 *Summary, s2 *Summary, p1 map[string]*Summary, p2 map[string]*Summary) bool {
-	parents := make(map[string]bool)
+func commonRoot(s1 *Summary, s2 *Summary, parents map[string]*Summary) bool {
+
+	parentSet := make(map[string]bool)
 
 	// quick case
 	if s1.Parent == s2.Parent {
@@ -27,18 +29,18 @@ func commonRoot(s1 *Summary, s2 *Summary, p1 map[string]*Summary, p2 map[string]
 	}
 
 	// store the line of s1 in a "set"
-	p := p1[s1.Parent].Parent
+	p := parents[s1.Parent].Parent
 	for p != "" {
-		parents[p] = true
-		p = p1[p].Parent
+		parentSet[p] = true
+		p = parents[p].Parent
 	}
 
 	p = s2.Parent
 	for p != "" {
-		if _, found := parents[p]; found {
+		if _, found := parentSet[p]; found {
 			return true
 		}
-		p = p2[p].Parent
+		p = parents[p].Parent
 	}
 
 	return false
@@ -53,6 +55,50 @@ func IsFile(path string) bool {
 	}
 	// Check that file is not a directory
 	return file.Mode().IsRegular()
+}
+
+// isDescendant iterates the line of one of the summaries to find out if the other
+// one is a descendant
+func isDescendant(descendant *Summary, ancestor *Summary, line map[string]*Summary) bool {
+
+	if descendant.Parent == "" {
+		return false
+	}
+
+	if descendant.Parent == ancestor.ID {
+		return true
+	}
+
+	if s, found := line[descendant.Parent]; found {
+		return isDescendant(s, ancestor, line)
+	}
+
+	return false
+}
+
+// mergeSummaryMap creates a map with keys/values from all the maps
+// if ignoreCollisions is set to false, an error will be returned when an
+// existing key is added to the map
+func mergeSummaryMap(ignoreCollisions bool, maps ...map[string]*Summary) (map[string]*Summary, error) {
+
+	if len(maps) < 1 {
+		return nil, errors.New("No maps were passed")
+	}
+
+	m := make(map[string]*Summary)
+	for k, v := range maps[0] {
+		m[k] = v
+	}
+	for i := 1; i < len(maps); i++ {
+		for k, v := range maps[i] {
+			if s, conflict := m[k]; !ignoreCollisions && conflict && !v.Equals(s) {
+				return nil, fmt.Errorf("Error merging key: %s", k)
+			}
+			m[k] = v
+		}
+	}
+
+	return m, nil
 }
 
 // ProjectPath returns the directory this project is supposed to be at

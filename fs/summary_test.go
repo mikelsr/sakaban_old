@@ -82,11 +82,11 @@ func TestIndexedSummary_AddParent(t *testing.T) {
 // TestIndexedSummary_Contains checks that an IndexedSummary contains a
 // summary and doesn't contain another
 func TestIndexedSummary_Contains(t *testing.T) {
-	id, _ := uuid.NewV1()
+	id, _ := uuid.NewV4()
 	f1 := &File{ID: id, Path: "1", Blocks: []*Block{&Block{Content: []byte{0, 1}}}}
-	id, _ = uuid.NewV1()
+	id, _ = uuid.NewV4()
 	f2 := &File{ID: id, Path: "2", Blocks: []*Block{&Block{Content: []byte{0, 1}}}}
-	id, _ = uuid.NewV1()
+	id, _ = uuid.NewV4()
 	f3 := &File{ID: id, Path: "3", Blocks: []*Block{&Block{Content: []byte{1, 0}}}}
 
 	s1 := MakeSummary(f1)

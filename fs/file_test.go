@@ -28,7 +28,7 @@ func TestMakeFile(t *testing.T) {
 // File->Summary->File->Summary construction cycle
 func TestMakeFileFromSummary(t *testing.T) {
 	f, _ := MakeFile(muffinPath)
-	parent, _ := uuid.NewV1()
+	parent, _ := uuid.NewV4()
 	f.Parent = parent
 	s := MakeSummary(f)
 	f2, err := MakeFileFromSummary(s)
@@ -43,7 +43,7 @@ func TestMakeFileFromSummary(t *testing.T) {
 	}
 
 	// different ID and amount of Blocks
-	f2.ID, _ = uuid.NewV1()
+	f2.ID, _ = uuid.NewV4()
 	s2 = MakeSummary(f2)
 	s2.Blocks = []uint64{0, 1}
 	if s.Equals(s2) || s.Is(s2) {

@@ -11,8 +11,9 @@ import (
 // IndexedSummary stores multiple Summary structs indexed by path
 // TODO: fix path redundancy
 type IndexedSummary struct {
-	Files     map[string]*Summary `json:"files"`
-	Parents   map[string]*Summary `json:"parents"`
+	Files   map[string]*Summary `json:"files"`
+	Parents map[string]*Summary `json:"parents"`
+	// TODO: is anything other than the ID of Deletions used?
 	Deletions map[string]*Summary `json:"deletions"`
 }
 
@@ -88,45 +89,6 @@ func (is *IndexedSummary) DeleteParent(summaries ...*Summary) error {
 	return nil
 }
 
-// Merge compares a summary of a local and a remote directory
-// TODO
-func (is *IndexedSummary) Merge(newIS *IndexedSummary) *IndexedSummary {
-	m, _ := MakeIndexedSummary()
-Lookup:
-	for path, s := range is.Files {
-		if ns, found := newIS.Files[path]; found {
-			// same file
-			if s.ID == ns.ID {
-				m.Add(s)
-				continue Lookup
-			}
-			// branches of the same file
-			if commonRoot(s, ns, is.Parents, newIS.Parents) {
-				s1 := *s
-				s2 := *ns
-				s1.Path = fmt.Sprintf("%s_%s", s.Path, s.ID)
-				s2.Path = fmt.Sprintf("%s_%s", ns.Path, ns.ID)
-				m.Add(&s1, &s2)
-				continue Lookup
-			}
-		} else {
-
-		}
-	}
-
-	// deletions
-	for id := range newIS.Deletions {
-		if s, deleted := is.Deletions[id]; !deleted {
-			if _, found := is.Files[s.Path]; found && s.ID == id {
-				// TODO: change IndexedSummary.Delete
-				// delete file
-				m.Deletions[id] = s
-			}
-		}
-	}
-	return m
-}
-
 // Update compares two IndexSummaries from the same local directory
 // and returns the resulting IndexedSummary
 func (is *IndexedSummary) Update(newIS *IndexedSummary) *IndexedSummary {
@@ -165,6 +127,68 @@ Lookup:
 		}
 	}
 	return u
+}
+
+// Merge compares a summary of a local and a remote directory
+func Merge(is1 *IndexedSummary, is2 *IndexedSummary) (*IndexedSummary, error) {
+	m, _ := MakeIndexedSummary()
+
+	// merge parents
+	parents, err := mergeSummaryMap(false, is1.Parents, is2.Parents)
+	if err != nil {
+		return nil, err
+	}
+	m.Parents = parents
+
+	// merge deletions
+	m.Deletions, _ = mergeSummaryMap(true, is1.Deletions, is2.Deletions)
+
+	for path, s := range is1.Files {
+		if ns, found := is2.Files[path]; found {
+			// same file
+			if s.ID == ns.ID {
+				m.Add(s)
+				continue
+			}
+			// branches of the same file
+			if commonRoot(s, ns, m.Parents) {
+				s1 := *s
+				s2 := *ns
+				s1.Path = fmt.Sprintf("%s_%s", s.Path, s.ID)
+				s2.Path = fmt.Sprintf("%s_%s", ns.Path, ns.ID)
+				m.Add(&s1, &s2)
+				continue
+			}
+		} else {
+			// file is now a parent
+			if _, parent := m.Parents[s.ID]; parent {
+				continue
+			}
+			// file is now deleted
+			if _, deleted := m.Deletions[s.ID]; deleted {
+				continue
+			}
+			m.Add(s)
+		}
+	}
+
+	for path, s := range is2.Files {
+		// file has been merged/added already
+		if _, found := is1.Files[path]; found {
+			continue
+		}
+		// file is now a parent
+		if _, parent := m.Parents[s.ID]; parent {
+			continue
+		}
+		// file is now deleted
+		if _, deleted := m.Deletions[s.ID]; deleted {
+			continue
+		}
+		m.Add(s)
+	}
+
+	return m, nil
 }
 
 // Summary is used to marshal/unmarshal Files to/from JSON files
