@@ -36,7 +36,7 @@ func TestMakeSummary(t *testing.T) {
 	}
 
 	parent, _ := uuid.NewV4()
-	f.Parent = &parent
+	f.Parent = parent
 	s = MakeSummary(f)
 	if s.Parent != parent.String() {
 		t.FailNow()
@@ -75,6 +75,31 @@ func TestIndexedSummary_AddParent(t *testing.T) {
 	// repeated addition
 	err = is.AddParent(s)
 	if err == nil {
+		t.FailNow()
+	}
+}
+
+// TestIndexedSummary_Contains checks that an IndexedSummary contains a
+// summary and doesn't contain another
+func TestIndexedSummary_Contains(t *testing.T) {
+	id, _ := uuid.NewV1()
+	f1 := &File{ID: id, Path: "1", Blocks: []*Block{&Block{Content: []byte{0, 1}}}}
+	id, _ = uuid.NewV1()
+	f2 := &File{ID: id, Path: "2", Blocks: []*Block{&Block{Content: []byte{0, 1}}}}
+	id, _ = uuid.NewV1()
+	f3 := &File{ID: id, Path: "3", Blocks: []*Block{&Block{Content: []byte{1, 0}}}}
+
+	s1 := MakeSummary(f1)
+	s2 := MakeSummary(f2)
+	s3 := MakeSummary(f3)
+
+	is, _ := MakeIndexedSummary(s1)
+
+	if path, found := is.Contains(s2); !found || path != s1.Path {
+		t.FailNow()
+	}
+
+	if path, found := is.Contains(s3); found || path != "" {
 		t.FailNow()
 	}
 }

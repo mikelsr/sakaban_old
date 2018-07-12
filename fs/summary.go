@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+
+	"github.com/satori/go.uuid"
 )
 
 // IndexedSummary stores multiple Summary structs indexed by path
@@ -115,7 +117,7 @@ Lookup:
 	// deletions
 	for id := range newIS.Deletions {
 		if s, deleted := is.Deletions[id]; !deleted {
-			if s, found := is.Files[s.Path]; found && s.ID == id {
+			if _, found := is.Files[s.Path]; found && s.ID == id {
 				// TODO: change IndexedSummary.Delete
 				// delete file
 				m.Deletions[id] = s
@@ -176,7 +178,7 @@ type Summary struct {
 // MakeSummary creates a marshable Summary from a File
 func MakeSummary(f *File) *Summary {
 	var parent string
-	if f.Parent == nil {
+	if f.Parent == uuid.Nil {
 		parent = ""
 	} else {
 		parent = f.Parent.String()

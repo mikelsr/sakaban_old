@@ -18,7 +18,7 @@ const BlockSize int64 = 1024 * 1024 // 1024 kB
 //	Blocks: Blocks that form the file
 type File struct {
 	ID     uuid.UUID
-	Parent *uuid.UUID
+	Parent uuid.UUID
 	Path   string
 	Blocks []*Block
 }
@@ -48,7 +48,7 @@ func MakeFileFromSummary(s *Summary) (*File, error) {
 	}
 	if s.Parent != "" {
 		parent, err := uuid.FromString(s.Parent)
-		f.Parent = &parent
+		f.Parent = parent
 		if err != nil {
 			return nil, fmt.Errorf("Invalid parent ID: %s", s.ID)
 		}

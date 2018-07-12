@@ -29,7 +29,7 @@ func TestMakeFile(t *testing.T) {
 func TestMakeFileFromSummary(t *testing.T) {
 	f, _ := MakeFile(muffinPath)
 	parent, _ := uuid.NewV1()
-	f.Parent = &parent
+	f.Parent = parent
 	s := MakeSummary(f)
 	f2, err := MakeFileFromSummary(s)
 	if err != nil {
