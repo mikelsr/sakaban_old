@@ -36,17 +36,11 @@ func TestMakeFileFromSummary(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// same Summary
-	s2 := MakeSummary(f2)
-	if !s.Is(s2) {
-		t.FailNow()
-	}
-
 	// different ID and amount of Blocks
 	f2.ID, _ = uuid.NewV4()
-	s2 = MakeSummary(f2)
+	s2 := MakeSummary(f2)
 	s2.Blocks = []uint64{0, 1}
-	if s.Equals(s2) || s.Is(s2) {
+	if s.Equals(s2) {
 		t.FailNow()
 	}
 

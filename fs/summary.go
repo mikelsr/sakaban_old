@@ -40,8 +40,3 @@ func (s *Summary) Equals(s2 *Summary) bool {
 	}
 	return true
 }
-
-// Is compares the ID, PARENT and CONTENT of a Summary
-func (s *Summary) Is(s2 *Summary) bool {
-	return s.ID == s2.ID && s.Parent == s2.Parent && s.Equals(s2)
-}
