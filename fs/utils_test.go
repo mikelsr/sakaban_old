@@ -32,20 +32,20 @@ func TestCommonRoot(t *testing.T) {
 	s5 := MakeSummary(f5)
 	s6 := MakeSummary(f6)
 
-	is1, _ := MakeIndexedSummary(s3)
-	is1.AddParent(s1, s2)
-	is2, _ := MakeIndexedSummary(s5)
-	is2.AddParent(s1, s4)
+	i1, _ := MakeIndex(s3)
+	i1.AddParent(s1, s2)
+	i2, _ := MakeIndex(s5)
+	i2.AddParent(s1, s4)
 
-	parents, _ := mergeSummaryMap(true, is1.Parents, is2.Parents)
+	parents, _ := mergeSummaryMap(true, i1.Parents, i2.Parents)
 
 	// they have a corrent ancestor
 	if !commonRoot(s3, s5, parents) {
 		t.FailNow()
 	}
 
-	is1.Add(s6)
-	is2.Add(s6)
+	i1.Add(s6)
+	i2.Add(s6)
 
 	// they don't have a corrent ancestor
 	if commonRoot(s3, s6, parents) {
