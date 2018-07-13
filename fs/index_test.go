@@ -257,16 +257,15 @@ func TestMerge(t *testing.T) {
 	testMerge4(t) // delete a file
 	testMerge5(t) // delete a file in one branch, edit it in another
 	testMerge6(t) // delete a file in one branch, move it in another
+	testMerge7(t) // compare merges
 }
 
 // testMerge1 merges the same file
 func testMerge1(t *testing.T) {
-	id, _ := uuid.NewV4()
-	f1_0ab := &File{ID: id, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0}}}}
-	s1_0ab := MakeSummary(f1_0ab)
+	s := &Summary{ID: "id", Path: "/path", Blocks: []uint64{0}}
 
-	i1, _ := MakeIndex(s1_0ab)
-	i2, _ := MakeIndex(s1_0ab)
+	i1, _ := MakeIndex(s)
+	i2, _ := MakeIndex(s)
 
 	// equal summaries
 	i3, err := Merge(i1, i2)
@@ -277,27 +276,17 @@ func testMerge1(t *testing.T) {
 		t.FailNow()
 	}
 
-	if !i3.Files[s1_0ab.Path].Equals(s1_0ab) {
+	if !i3.Files[s.Path].Equals(s) {
 		t.FailNow()
 	}
 }
 
 // testMerge2 merges different branches of a same file
 func testMerge2(t *testing.T) {
-	id, _ := uuid.NewV4()
-	f1_0ab := &File{ID: id, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0}}}}
-	s1_0ab := MakeSummary(f1_0ab)
-
-	id, _ = uuid.NewV4()
-	f1_1a := &File{ID: id, Parent: f1_0ab.ID, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0, 1}}}}
-	id, _ = uuid.NewV4()
-	f1_2a := &File{ID: id, Parent: f1_1a.ID, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0, 1}}}}
-	id, _ = uuid.NewV4()
-	f1_1b := &File{ID: id, Parent: f1_0ab.ID, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0, 2}}}}
-
-	s1_1a := MakeSummary(f1_1a)
-	s1_2a := MakeSummary(f1_2a)
-	s1_1b := MakeSummary(f1_1b)
+	s1_0ab := &Summary{ID: "id1", Path: "/path_1", Blocks: []uint64{0}}
+	s1_1a := &Summary{ID: "id2", Parent: s1_0ab.ID, Path: "/path_1", Blocks: []uint64{1}}
+	s1_2a := &Summary{ID: "id3", Parent: s1_1a.ID, Path: "/path_1", Blocks: []uint64{2}}
+	s1_1b := &Summary{ID: "id4", Parent: s1_0ab.ID, Path: "/path_1", Blocks: []uint64{3}}
 
 	i1, _ := MakeIndex(s1_2a)
 	i2, _ := MakeIndex(s1_1b)
@@ -315,20 +304,10 @@ func testMerge2(t *testing.T) {
 
 // testMerge3 merges an edited and a moved branch of a file
 func testMerge3(t *testing.T) {
-	id, _ := uuid.NewV4()
-	f1_0ab := &File{ID: id, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0}}}}
-	s1_0ab := MakeSummary(f1_0ab)
-
-	id, _ = uuid.NewV4()
-	f1_1a := &File{ID: id, Parent: f1_0ab.ID, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0, 1}}}}
-	id, _ = uuid.NewV4()
-	f1_2a := &File{ID: id, Parent: f1_1a.ID, Path: "/path_2", Blocks: []*Block{&Block{Content: []byte{0, 1}}}}
-	id, _ = uuid.NewV4()
-	f1_1b := &File{ID: id, Parent: f1_0ab.ID, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0, 2}}}}
-
-	s1_1a := MakeSummary(f1_1a)
-	s1_2a := MakeSummary(f1_2a)
-	s1_1b := MakeSummary(f1_1b)
+	s1_0ab := &Summary{ID: "id1", Path: "/path_1", Blocks: []uint64{0}}
+	s1_1a := &Summary{ID: "id2", Parent: s1_0ab.ID, Path: "/path_1", Blocks: []uint64{1}}
+	s1_2a := &Summary{ID: "id3", Parent: s1_1a.ID, Path: "/path_2", Blocks: []uint64{1}}
+	s1_1b := &Summary{ID: "id4", Parent: s1_0ab.ID, Path: "/path_1", Blocks: []uint64{2}}
 
 	i1, _ := MakeIndex(s1_2a)
 	i2, _ := MakeIndex(s1_1b)
@@ -349,13 +328,11 @@ func testMerge3(t *testing.T) {
 
 // testMerge4 creates a file in both branches and deletes it in one of them
 func testMerge4(t *testing.T) {
-	id, _ := uuid.NewV4()
-	f1 := &File{ID: id, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0}}}}
-	s1 := MakeSummary(f1)
+	s := &Summary{ID: "id", Path: "/path", Blocks: []uint64{0}}
 
-	i1, _ := MakeIndex(s1)
+	i1, _ := MakeIndex(s)
 	i2, _ := MakeIndex()
-	i2.AddDeletion(s1)
+	i2.AddDeletion(s)
 
 	i3, err := Merge(i1, i2)
 	if err != nil {
@@ -368,15 +345,9 @@ func testMerge4(t *testing.T) {
 
 // testMerge5 deletes a file in one branch, edits it in another
 func testMerge5(t *testing.T) {
-	id, _ := uuid.NewV4()
-	f1_0 := &File{ID: id, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0}}}}
-	id, _ = uuid.NewV4()
-	f1_1 := &File{ID: id, Parent: f1_0.ID, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{1}}}}
-	id, _ = uuid.NewV4()
-	f1_2 := &File{ID: id, Parent: f1_1.ID, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{2}}}}
-	s1_0 := MakeSummary(f1_0)
-	s1_1 := MakeSummary(f1_1)
-	s1_2 := MakeSummary(f1_2)
+	s1_0 := &Summary{ID: "id1", Path: "/path_1", Blocks: []uint64{0}}
+	s1_1 := &Summary{ID: "id2", Parent: s1_0.ID, Path: "/path_1", Blocks: []uint64{1}}
+	s1_2 := &Summary{ID: "id3", Parent: s1_1.ID, Path: "/path_1", Blocks: []uint64{2}}
 
 	i1, _ := MakeIndex(s1_2)
 	i2, _ := MakeIndex()
@@ -395,15 +366,9 @@ func testMerge5(t *testing.T) {
 
 // testMerge6 deletes a file in one branch, moves it in another
 func testMerge6(t *testing.T) {
-	id, _ := uuid.NewV4()
-	f1_0 := &File{ID: id, Path: "/path_1", Blocks: []*Block{&Block{Content: []byte{0}}}}
-	id, _ = uuid.NewV4()
-	f1_1 := &File{ID: id, Parent: f1_0.ID, Path: "/path_2", Blocks: []*Block{&Block{Content: []byte{0}}}}
-	id, _ = uuid.NewV4()
-	f1_2 := &File{ID: id, Parent: f1_1.ID, Path: "/path_3", Blocks: []*Block{&Block{Content: []byte{0}}}}
-	s1_0 := MakeSummary(f1_0)
-	s1_1 := MakeSummary(f1_1)
-	s1_2 := MakeSummary(f1_2)
+	s1_0 := &Summary{ID: "id1", Path: "/path_1", Blocks: []uint64{0}}
+	s1_1 := &Summary{ID: "id2", Parent: s1_0.ID, Path: "/path_2", Blocks: []uint64{0}}
+	s1_2 := &Summary{ID: "id3", Parent: s1_1.ID, Path: "/path_3", Blocks: []uint64{0}}
 
 	i1, _ := MakeIndex(s1_2)
 	i2, _ := MakeIndex()
@@ -416,6 +381,42 @@ func testMerge6(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(i3.Files) != 1 || len(i3.Parents) != 2 || len(i3.Deletions) != 0 {
+		t.FailNow()
+	}
+}
+
+// testMerge7 merges two indices and compares two merges
+func testMerge7(t *testing.T) {
+	s1_0ab := &Summary{ID: "id1", Path: "/path_1", Blocks: []uint64{0}}
+	s1_1a := &Summary{ID: "id2", Parent: s1_0ab.ID, Path: "/path_1", Blocks: []uint64{1}}
+	s1_2a := &Summary{ID: "id3", Parent: s1_1a.ID, Path: "/path_1", Blocks: []uint64{2}}
+
+	is1, _ := MakeIndex(s1_2a)
+	is1.AddParent(s1_0ab, s1_1a)
+
+	is2, _ := MakeIndex()
+	is2.AddParent(s1_0ab)
+	is2.AddDeletion(s1_1a)
+
+	m1, err := Merge(is1, is2)
+	if err != nil {
+		t.FailNow()
+	}
+
+	m2, err := Merge(is2, is1)
+	if err != nil {
+		t.FailNow()
+	}
+
+	if !m1.Equals(m2) {
+		t.FailNow()
+	}
+
+	if len(m1.Files) != 1 || len(m1.Parents) != 2 || len(m1.Deletions) != 0 {
+		t.FailNow()
+	}
+
+	if file, found := m1.Files[s1_2a.Path]; !found || !file.Equals(s1_2a) {
 		t.FailNow()
 	}
 }
