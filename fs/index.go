@@ -192,18 +192,18 @@ Lookup:
 
 // Merge compares a summary of a local and a remote directory
 // This function should return the same summary switching s1 and s2
-func Merge(is1 *Index, is2 *Index) (*Index, error) {
+func Merge(i1 *Index, i2 *Index) (*Index, error) {
 	m, _ := MakeIndex()
 
 	// merge parents
-	parents, err := mergeSummaryMap(false, is1.Parents, is2.Parents)
+	parents, err := mergeSummaryMap(false, i1.Parents, i2.Parents)
 	if err != nil {
 		return nil, err
 	}
 	m.Parents = parents
 
 	// merge deletions
-	m.Deletions, _ = mergeSummaryMap(true, is1.Deletions, is2.Deletions)
+	m.Deletions, _ = mergeSummaryMap(true, i1.Deletions, i2.Deletions)
 
 	// filter misdeletions out
 	for id := range m.Parents {
@@ -212,19 +212,19 @@ func Merge(is1 *Index, is2 *Index) (*Index, error) {
 		}
 	}
 
-	for path, s := range is1.Files {
-		if ns, found := is2.Files[path]; found {
+	for path, s := range i1.Files {
+		if ns, found := i2.Files[path]; found {
 			// same file
 			if s.ID == ns.ID {
 				m.Add(s)
 				continue
 			}
 
-			if isDescendant(s, ns, is1.Parents) {
+			if isDescendant(s, ns, i1.Parents) {
 				m.Add(ns)
 				continue
 			}
-			if isDescendant(ns, s, is2.Parents) {
+			if isDescendant(ns, s, i2.Parents) {
 				m.Add(s)
 				continue
 			}
@@ -250,9 +250,9 @@ func Merge(is1 *Index, is2 *Index) (*Index, error) {
 		}
 	}
 
-	for path, s := range is2.Files {
+	for path, s := range i2.Files {
 		// file has been merged/added already
-		if _, found := is1.Files[path]; found {
+		if _, found := i1.Files[path]; found {
 			continue
 		}
 		// file is now a parent

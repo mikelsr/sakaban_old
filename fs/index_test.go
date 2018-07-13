@@ -391,19 +391,19 @@ func testMerge7(t *testing.T) {
 	s1_1a := &Summary{ID: "id2", Parent: s1_0ab.ID, Path: "/path_1", Blocks: []uint64{1}}
 	s1_2a := &Summary{ID: "id3", Parent: s1_1a.ID, Path: "/path_1", Blocks: []uint64{2}}
 
-	is1, _ := MakeIndex(s1_2a)
-	is1.AddParent(s1_0ab, s1_1a)
+	i1, _ := MakeIndex(s1_2a)
+	i1.AddParent(s1_0ab, s1_1a)
 
-	is2, _ := MakeIndex()
-	is2.AddParent(s1_0ab)
-	is2.AddDeletion(s1_1a)
+	i2, _ := MakeIndex()
+	i2.AddParent(s1_0ab)
+	i2.AddDeletion(s1_1a)
 
-	m1, err := Merge(is1, is2)
+	m1, err := Merge(i1, i2)
 	if err != nil {
 		t.FailNow()
 	}
 
-	m2, err := Merge(is2, is1)
+	m2, err := Merge(i2, i1)
 	if err != nil {
 		t.FailNow()
 	}
