@@ -7,14 +7,14 @@ import (
 	"bitbucket.org/mikelsr/sakaban/fs"
 )
 
-// ReadIndexedSummary creates an IndexedSummary given a path
+// ReadIndex creates an Index given a path
 // to a file containing a valid json
-func ReadIndexedSummary(filename string) (*fs.IndexedSummary, error) {
+func ReadIndex(filename string) (*fs.Index, error) {
 	file, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	var is fs.IndexedSummary
+	var is fs.Index
 	err = json.Unmarshal(file, &is)
 	if err != nil {
 		return nil, err
@@ -22,10 +22,10 @@ func ReadIndexedSummary(filename string) (*fs.IndexedSummary, error) {
 	return &is, nil
 }
 
-// WriteIndexedSummary writes an IndexedSummary as a JSON in
+// WriteIndex writes an Index as a JSON in
 // the file specified by the path
-func WriteIndexedSummary(summary *fs.IndexedSummary, filename string) error {
-	content, _ := json.Marshal(summary)
+func WriteIndex(index *fs.Index, filename string) error {
+	content, _ := json.Marshal(index)
 	err := ioutil.WriteFile(filename, content, 0755)
 	if err != nil {
 		return err

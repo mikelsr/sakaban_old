@@ -21,34 +21,34 @@ type Scanner struct {
 	// Summaries lightens memory usage by avoiding storing
 	// files
 	Summaries []*fs.Summary
-	// NewIndexedSummary will store the scanned summaries
-	NewIndexedSummary *fs.IndexedSummary
-	// NewIndexedSummary will store the read summaries
-	OldIndexedSummary *fs.IndexedSummary
+	// NewIndex will store the scanned summaries
+	NewIndex *fs.Index
+	// NewIndex will store the read summaries
+	OldIndex *fs.Index
 }
 
 // MakeScanner creates a new scanner, tries to read
-// OldIndexedSummary and create NewIndexedSummary
+// OldIndex and create NewIndex
 func MakeScanner(root string) (*Scanner, error) {
 	s := new(Scanner)
 	s.Root = root
-	// Old IndexedSummary
+	// Old Index
 	if SummaryExists(root) {
-		oldIndex, err := ReadIndexedSummary(filepath.Join(root, SummaryDir, SummaryFile))
+		oldIndex, err := ReadIndex(filepath.Join(root, SummaryDir, SummaryFile))
 		if err != nil {
 			return nil, err
 		}
-		s.OldIndexedSummary = oldIndex
+		s.OldIndex = oldIndex
 	} else {
-		s.OldIndexedSummary, _ = fs.MakeIndexedSummary()
+		s.OldIndex, _ = fs.MakeIndex()
 	}
 
-	// New IndexedSummary
+	// New Index
 	err := s.Scan(root)
 	if err != nil {
 		return nil, err
 	}
-	s.NewIndexedSummary, _ = fs.MakeIndexedSummary(s.Summaries...)
+	s.NewIndex, _ = fs.MakeIndex(s.Summaries...)
 	return s, nil
 }
 

@@ -36,9 +36,9 @@ func TestMakeScanner(t *testing.T) {
 		t.FailNow()
 	}
 	// scanner with old indexed summary
-	WriteIndexedSummary(s.NewIndexedSummary, filename)
+	WriteIndex(s.NewIndex, filename)
 	s, err = MakeScanner(unitTestDir)
-	if err != nil || len(s.OldIndexedSummary.Files) < 1 {
+	if err != nil || len(s.OldIndex.Files) < 1 {
 		t.FailNow()
 	}
 
