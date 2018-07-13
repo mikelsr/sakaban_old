@@ -9,10 +9,9 @@ import (
 // TestMakeIndex gives a valid and an invalid set to the
 // Index constructor
 func TestMakeIndex(t *testing.T) {
-	f, _ := MakeFile(muffinPath)
-	s1 := MakeSummary(f)
+	s1 := &Summary{ID: "id", Path: "/path", Blocks: []uint64{0}}
 	s2 := *s1
-	s2.Path = "/s2/Path"
+	s2.Path = "/s2/path"
 	i, err := MakeIndex(s1, &s2)
 	if err != nil {
 		t.Fatal(err)
@@ -30,8 +29,7 @@ func TestMakeIndex(t *testing.T) {
 // TestIndex_Add adds a new and a repeated summary to the
 // Index
 func TestIndex_Add(t *testing.T) {
-	f, _ := MakeFile(muffinPath)
-	s := MakeSummary(f)
+	s := &Summary{ID: "id", Path: "/path", Blocks: []uint64{0}}
 	i, _ := MakeIndex()
 	// new addition
 	err := i.Add(s)
@@ -45,11 +43,27 @@ func TestIndex_Add(t *testing.T) {
 	}
 }
 
+// TestIndex_AddDeletion adds a new and a repeated deletion to the
+// Index
+func TestIndex_AddDeletion(t *testing.T) {
+	s := &Summary{ID: "id", Path: "/path", Blocks: []uint64{0}}
+	i, _ := MakeIndex()
+	// new addition
+	err := i.AddDeletion(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// repeated addition
+	err = i.AddDeletion(s)
+	if err == nil {
+		t.FailNow()
+	}
+}
+
 // TestIndex_AddParent adds a new and a repeated parent to the
 // Index
 func TestIndex_AddParent(t *testing.T) {
-	f, _ := MakeFile(muffinPath)
-	s := MakeSummary(f)
+	s := &Summary{ID: "id", Path: "/path", Blocks: []uint64{0}}
 	i, _ := MakeIndex()
 	// new addition
 	err := i.AddParent(s)
@@ -91,8 +105,7 @@ func TestIndex_Contains(t *testing.T) {
 // TestIndex_Delete deletes an existing and a nonexisting summary
 // from the Index
 func TestIndex_Delete(t *testing.T) {
-	f, _ := MakeFile(muffinPath)
-	s := MakeSummary(f)
+	s := &Summary{ID: "id", Path: "/path", Blocks: []uint64{0}}
 	i, _ := MakeIndex(s)
 	err := i.Delete(s)
 	if err != nil {
@@ -104,11 +117,26 @@ func TestIndex_Delete(t *testing.T) {
 	}
 }
 
+// TestIndex_DeleteDeletion deletes an existing and a nonexisting deletion
+// from the Index
+func TestIndex_DeleteDeletion(t *testing.T) {
+	s := &Summary{ID: "id", Path: "/path", Blocks: []uint64{0}}
+	i, _ := MakeIndex()
+	i.AddDeletion(s)
+	err := i.DeleteDeletion(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = i.DeleteDeletion(s)
+	if err == nil {
+		t.FailNow()
+	}
+}
+
 // TestIndex_DeleteParent deletes an existing and a nonexisting parent
 // from the Index
 func TestIndex_DeleteParent(t *testing.T) {
-	f, _ := MakeFile(muffinPath)
-	s := MakeSummary(f)
+	s := &Summary{ID: "id", Path: "/path", Blocks: []uint64{0}}
 	i, _ := MakeIndex()
 	i.AddParent(s)
 	err := i.DeleteParent(s)
@@ -119,6 +147,56 @@ func TestIndex_DeleteParent(t *testing.T) {
 	if err == nil {
 		t.FailNow()
 	}
+}
+
+// TestEquals compares indices with different and equal attributes
+func TestIndex_Equals(t *testing.T) {
+	s1 := &Summary{ID: "f1.0", Path: "/f1", Blocks: []uint64{1}}
+	s2 := &Summary{ID: "f2.0", Path: "/f2", Blocks: []uint64{2}}
+	s3 := &Summary{ID: "f3.0", Path: "/f3", Blocks: []uint64{3}}
+
+	i1, _ := MakeIndex(s1)
+	i1.AddParent(s2)
+	i1.AddDeletion(s3)
+
+	i2, _ := MakeIndex()
+
+	// Different number of files/deletions/parents
+	if i1.Equals(i2) {
+		t.FailNow()
+	}
+
+	// different files
+	i2.Add(s2)
+	i2.AddParent(s1)
+	i2.AddDeletion(s1)
+	if i1.Equals(i2) {
+		t.FailNow()
+	}
+
+	// different parents
+	i2.Delete(s2)
+	i2.Add(s1)
+	if i1.Equals(i2) {
+		t.FailNow()
+	}
+
+	// different deletions
+	i2.Delete(s2)
+	i2.Add(s1)
+	i2.DeleteParent(s1)
+	i2.AddParent(s2)
+	if i1.Equals(i2) {
+		t.FailNow()
+	}
+
+	// equal
+	i2.DeleteDeletion(s1)
+	i2.AddDeletion(s3)
+	if !i1.Equals(i2) {
+		t.FailNow()
+	}
+
 }
 
 // TestIndex_Update creates and updates an Index,
@@ -277,8 +355,7 @@ func testMerge4(t *testing.T) {
 
 	i1, _ := MakeIndex(s1)
 	i2, _ := MakeIndex()
-	// TODO: deletion function for Index struct
-	i2.Deletions[s1.ID] = s1
+	i2.AddDeletion(s1)
 
 	i3, err := Merge(i1, i2)
 	if err != nil {
@@ -305,7 +382,7 @@ func testMerge5(t *testing.T) {
 	i2, _ := MakeIndex()
 
 	i1.AddParent(s1_0, s1_1)
-	i2.Deletions[s1_0.ID] = s1_0
+	i2.AddDeletion(s1_0)
 
 	i3, err := Merge(i1, i2)
 	if err != nil {
@@ -332,7 +409,7 @@ func testMerge6(t *testing.T) {
 	i2, _ := MakeIndex()
 
 	i1.AddParent(s1_0, s1_1)
-	i2.Deletions[s1_0.ID] = s1_0
+	i2.AddDeletion(s1_0)
 
 	i3, err := Merge(i1, i2)
 	if err != nil {

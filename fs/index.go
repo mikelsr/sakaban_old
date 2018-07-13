@@ -44,6 +44,17 @@ func (i *Index) Add(summaries ...*Summary) error {
 	return nil
 }
 
+// AddDeletion adds a new set of Summary to Index.Deletions
+func (i *Index) AddDeletion(summaries ...*Summary) error {
+	for _, s := range summaries {
+		if _, found := i.Deletions[s.ID]; found {
+			return os.ErrExist
+		}
+		i.Deletions[s.ID] = s
+	}
+	return nil
+}
+
 // AddParent adds a new set of Summary to Index.Parents
 func (i *Index) AddParent(summaries ...*Summary) error {
 	for _, s := range summaries {
@@ -77,6 +88,18 @@ func (i *Index) Delete(summaries ...*Summary) error {
 	return nil
 }
 
+// DeleteDeletion needs a better name. It removes a set of Summary from
+// Index.Parents. Not used
+func (i *Index) DeleteDeletion(summaries ...*Summary) error {
+	for _, s := range summaries {
+		if _, found := i.Deletions[s.ID]; !found {
+			return os.ErrNotExist
+		}
+		delete(i.Deletions, s.ID)
+	}
+	return nil
+}
+
 // DeleteParent removes a set of Summary from Index.Parents
 // Not used
 func (i *Index) DeleteParent(summaries ...*Summary) error {
@@ -87,6 +110,44 @@ func (i *Index) DeleteParent(summaries ...*Summary) error {
 		delete(i.Parents, s.ID)
 	}
 	return nil
+}
+
+// Equals compares the Files, Parents and Deletions of two indices
+func (i *Index) Equals(newIndex *Index) bool {
+	if len(i.Files) != len(newIndex.Files) ||
+		len(i.Parents) != len(newIndex.Parents) ||
+		len(i.Deletions) != len(newIndex.Deletions) {
+		return false
+	}
+
+	for path, s := range i.Files {
+		if ns, found := newIndex.Files[path]; found {
+			if s.Equals(ns) {
+				continue
+			}
+		}
+		return false
+	}
+
+	for id, s := range i.Parents {
+		if ns, found := newIndex.Parents[id]; found {
+			if s.Equals(ns) {
+				continue
+			}
+		}
+		return false
+	}
+
+	for id, s := range i.Deletions {
+		if ns, found := newIndex.Deletions[id]; found {
+			if s.Equals(ns) {
+				continue
+			}
+		}
+		return false
+	}
+
+	return true
 }
 
 // Update compares two IndexSummaries from the same local directory
@@ -117,7 +178,7 @@ Lookup:
 				}
 			}
 			// file deleted
-			u.Deletions[s.ID] = s
+			u.AddDeletion(s)
 		}
 	}
 	// add missing (newly created) files
