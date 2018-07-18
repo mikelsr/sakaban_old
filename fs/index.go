@@ -150,46 +150,6 @@ func (i *Index) Equals(newIndex *Index) bool {
 	return true
 }
 
-// Update compares two IndexSummaries from the same local directory
-// and returns the resulting Index
-func (i *Index) Update(newIndex *Index) *Index {
-	u, _ := MakeIndex()
-	// look for old files
-Lookup:
-	for path, s := range i.Files {
-		ns, found := newIndex.Files[path]
-		// file may have been updated
-		if found {
-			if s.Equals(ns) { // File is equal
-				u.Add(ns)
-			} else { // File has been updated
-				// TODO: Allow record of child and parents in the same path
-				u.Add(&Summary{ID: ns.ID, Parent: s.ID, Path: path, Blocks: ns.Blocks})
-				u.AddParent(s)
-			}
-		} else {
-			// comparing contents is slow
-			for _, ns := range newIndex.Files {
-				// file has been moved
-				if reflect.DeepEqual(s.Blocks, ns.Blocks) {
-					u.Add(&Summary{ID: ns.ID, Parent: s.ID, Path: ns.Path, Blocks: ns.Blocks})
-					u.AddParent(s)
-					continue Lookup
-				}
-			}
-			// file deleted
-			u.AddDeletion(s)
-		}
-	}
-	// add missing (newly created) files
-	for path, s := range newIndex.Files {
-		if _, found := u.Files[path]; !found {
-			u.Add(s)
-		}
-	}
-	return u
-}
-
 // Merge compares a summary of a local and a remote directory
 // This function should return the same summary switching s1 and s2
 func Merge(i1 *Index, i2 *Index) (*Index, error) {
@@ -267,4 +227,44 @@ func Merge(i1 *Index, i2 *Index) (*Index, error) {
 	}
 
 	return m, nil
+}
+
+// Update compares two IndexSummaries from the same local directory
+// and returns the resulting Index
+func Update(oldIndex *Index, newIndex *Index) *Index {
+	u, _ := MakeIndex()
+	// look for old files
+Lookup:
+	for path, s := range oldIndex.Files {
+		ns, found := newIndex.Files[path]
+		// file may have been updated
+		if found {
+			if s.Equals(ns) { // File is equal
+				u.Add(ns)
+			} else { // File has been updated
+				// TODO: Allow record of child and parents in the same path
+				u.Add(&Summary{ID: ns.ID, Parent: s.ID, Path: path, Blocks: ns.Blocks})
+				u.AddParent(s)
+			}
+		} else {
+			// comparing contents is slow
+			for _, ns := range newIndex.Files {
+				// file has been moved
+				if reflect.DeepEqual(s.Blocks, ns.Blocks) {
+					u.Add(&Summary{ID: ns.ID, Parent: s.ID, Path: ns.Path, Blocks: ns.Blocks})
+					u.AddParent(s)
+					continue Lookup
+				}
+			}
+			// file deleted
+			u.AddDeletion(s)
+		}
+	}
+	// add missing (newly created) files
+	for path, s := range newIndex.Files {
+		if _, found := u.Files[path]; !found {
+			u.Add(s)
+		}
+	}
+	return u
 }

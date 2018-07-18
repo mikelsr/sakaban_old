@@ -214,7 +214,7 @@ func TestIndex_Update(t *testing.T) {
 		&Summary{ID: "f4.0", Path: "/f4", Blocks: []uint64{4}}, // keep
 		&Summary{ID: "f5.0", Path: "/f5", Blocks: []uint64{4}}) // create
 
-	i3 := i1.Update(i2)
+	i3 := Update(i1, i2)
 
 	// change
 	if i3.Files["/f1"].Parent != i1.Files["/f1"].ID {
