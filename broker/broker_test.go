@@ -9,17 +9,6 @@ import (
 	"time"
 )
 
-const (
-	maxConnTries = 1e2
-)
-
-var connSleepTime = time.Duration(5e5) * time.Nanosecond
-var pubKey = "k1"
-var peerID = "p1"
-var testmultiaddr = "/ip4/127.0.0.1/tcp/3081"
-var bURL = fmt.Sprintf("http://%s:%d", httpDefaultAddr, httpDefaultPort)
-var pURL = fmt.Sprintf("%s/peer", bURL)
-
 func TestMain(m *testing.M) {
 	b := NewBroker()
 	go b.ListenAndServeDefault()
