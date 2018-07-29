@@ -12,5 +12,5 @@ var connSleepTime = time.Duration(5e5) * time.Nanosecond                 // time
 var pubKey = "k1"                                                        // public key
 var peerID = "p1"                                                        // peer id
 var testmultiaddr = "/ip4/127.0.0.1/tcp/3081"                            // multiaddr used for testing
-var bURL = fmt.Sprintf("http://%s:%d", httpDefaultAddr, httpDefaultPort) // url of broker
+var bURL = fmt.Sprintf("http://%s:%d", HttpDefaultAddr, HttpDefaultPort) // url of broker
 var pURL = fmt.Sprintf("%s/peer", bURL)                                  // bURL + path to peer api

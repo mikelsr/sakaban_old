@@ -95,9 +95,9 @@ func (b *Broker) ListenAndServe(addr string, port int) error {
 	return nil
 }
 
-// ListenAndServeDefault calls ListenAndServe at httpDefaultAddr:httpDefaultPort
+// ListenAndServeDefault calls ListenAndServe at HttpDefaultAddr:HttpDefaultPort
 func (b *Broker) ListenAndServeDefault() error {
-	return b.ListenAndServe(httpDefaultAddr, httpDefaultPort)
+	return b.ListenAndServe(HttpDefaultAddr, HttpDefaultPort)
 }
 
 // verifyClient checks that attributes are set and multiaddr is valid

@@ -1,7 +1,9 @@
 package broker
 
 const (
-	httpDefaultAddr = "0.0.0.0"
-	httpDefaultPort = 3080
+	// HttpDefaultAddr is the addr the broker will listen at by default
+	HttpDefaultAddr = "0.0.0.0"
+	// HttpDefaultPort is the port the broker will listen at by default
+	HttpDefaultPort = 3080
 	restPublicKey   = "publicKey"
 )
