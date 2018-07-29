@@ -11,8 +11,8 @@ import (
 const maxTCP = 65535
 
 func main() {
-	addr := flag.String("addr", broker.HttpDefaultAddr, "Listening address, ommit for default")
-	port := flag.Int("port", broker.HttpDefaultPort, "Listening port, ommit for default")
+	addr := flag.String("addr", broker.HTTPDefaultAddr, "Listening address, ommit for default")
+	port := flag.Int("port", broker.HTTPDefaultPort, "Listening port, ommit for default")
 	flag.Parse()
 
 	if *port < 1 || *port > maxTCP {
