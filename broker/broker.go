@@ -32,7 +32,7 @@ func NewBroker() *Broker {
 // handlePeer makes basic comprobation and delegates the request to the
 // corresponding method
 func (b *Broker) handlePeer(w http.ResponseWriter, r *http.Request) {
-	log.Printf("(%s)\t%s\n", r.Method, r.URL)
+	log.Printf("[Broker]\t(%s)\t%s\n", r.Method, r.URL)
 	r.ParseForm()
 	// verify that a public key is provided
 	publicKey := r.Form.Get(restPublicKey)
@@ -88,7 +88,7 @@ func (b *Broker) handlePeerPOST(w http.ResponseWriter, r *http.Request) {
 // ListenAndServe runs the http listener on the specified addr:port
 func (b *Broker) ListenAndServe(addr string, port int) error {
 	http.HandleFunc("/peer", b.handlePeer)
-	log.Printf("[Broker] Listening at %s:%d", addr, port)
+	log.Printf("[Broker]\tListening at %s:%d", addr, port)
 	err := http.ListenAndServe(fmt.Sprintf("%s:%d", addr, port), nil)
 	if err != nil {
 		log.Println(err)
@@ -105,7 +105,7 @@ func (b *Broker) ListenAndServeDefault() error {
 // sendStatus writes the status header to the ResponseWriter and logs it
 func sendStatus(w http.ResponseWriter, s int) {
 	w.WriteHeader(s)
-	log.Printf("%d\t%s", s, http.StatusText(s))
+	log.Printf("[Broker]\t%d\t%s", s, http.StatusText(s))
 }
 
 // verifyClient checks that attributes are set and multiaddr is valid
