@@ -1,6 +1,9 @@
 package peer
 
 import (
+	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -35,6 +38,27 @@ func TestMain(m *testing.M) {
 	m.Run()
 	// cleanup
 	os.RemoveAll(testDir)
+}
+
+func TestPeer_Decrypt(t *testing.T) {
+	// create and encrypt data
+	data := []byte{42}
+	ciphertext, err := rsa.EncryptPKCS1v15(rand.Reader, testPeer.PubKey, data)
+	if err != nil {
+		t.FailNow()
+	}
+
+	// wrong seed
+	_, err = testPeer.Decrypt(data, bytes.NewReader([]byte{0}))
+	if err == nil {
+		t.FailNow()
+	}
+
+	// correct decryption
+	decryptedData, err := testPeer.Decrypt(ciphertext, rand.Reader)
+	if err != nil || !bytes.Equal(decryptedData, data) {
+		t.FailNow()
+	}
 }
 
 func TestExportRSAKeys(t *testing.T) {
