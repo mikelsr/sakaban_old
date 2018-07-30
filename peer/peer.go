@@ -8,8 +8,8 @@ import (
 // Peer represents an individual device
 type Peer struct {
 	// PrvKey and PubKey are used to verify the identity of the Peer
-	PrvKey rsa.PrivateKey
-	PubKey rsa.PublicKey
+	PrvKey *rsa.PrivateKey
+	PubKey *rsa.PublicKey
 }
 
 // NewPeer creates a peer with a NEW PAIR OF KEYS
@@ -24,6 +24,6 @@ func NewPeer() (*Peer, error) {
 	if err != nil {
 		return nil, err
 	}
-	p := &Peer{PrvKey: *prv, PubKey: prv.PublicKey}
+	p := &Peer{PrvKey: prv, PubKey: &prv.PublicKey}
 	return p, nil
 }
