@@ -1,5 +1,9 @@
 package peer
 
 const (
-	keySize = 4096
+	filenamePrv    = "prvkey.pem"
+	filenamePub    = "pubkey.pem"
+	keySize        = 4096
+	permissionDir  = 0750
+	permissionFile = 0750
 )
