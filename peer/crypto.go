@@ -10,6 +10,15 @@ import (
 	"path/filepath"
 )
 
+// ExportRSAKeys calls ExportRSAPrvKey, ExportRSAPubKey to store 'prv' and 'pub' in 'dir'
+func ExportRSAKeys(dir string, prv *rsa.PrivateKey, pub *rsa.PublicKey) error {
+	err := ExportRSAPrvKey(dir, prv)
+	if err != nil {
+		return err
+	}
+	return ExportRSAPubKey(dir, pub)
+}
+
 // ExportRSAPrvKey writes a PEM containing the 'prv' RSA private key to a file in 'dir'
 func ExportRSAPrvKey(dir string, prv *rsa.PrivateKey) error {
 	// TODO: folder ownership/permissions
@@ -29,6 +38,19 @@ func ExportRSAPubKey(dir string, pub *rsa.PublicKey) error {
 	}
 	err = ioutil.WriteFile(filepath.Join(dir, filenamePub), pubBytes, permissionFile)
 	return err
+}
+
+// ImportRSAKeys imports a private and a public key from 'dir'
+func ImportRSAKeys(dir string) (*rsa.PrivateKey, *rsa.PublicKey, error) {
+	prv, err := ImportRSAPrvKey(dir)
+	if err != nil {
+		return nil, nil, err
+	}
+	pub, err := ImportRSAPubKey(dir)
+	if err != nil {
+		return nil, nil, err
+	}
+	return prv, pub, nil
 }
 
 // ImportRSAPrvKey reads a private RSA key from 'dir'
