@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -102,6 +103,19 @@ func TestBroker_handleAuth(t *testing.T) {
 		"text/plain",
 		bytes.NewReader(auth.RSAEncrypt(brokerRSAKey, []byte(fmt.Sprint(problem.Solution())))))
 	if err != nil || r.StatusCode != http.StatusOK {
+		t.FailNow()
+	}
+
+	r, err = getTestPeer(auth.PrintPubKey(_pub))
+	if err != nil {
+		t.FailNow()
+	}
+	body, err = ioutil.ReadAll(r.Body)
+	if err != nil {
+		t.FailNow()
+	}
+	// check that the peer was correctly registered
+	if !strings.Contains(string(body), "pid1") {
 		t.FailNow()
 	}
 }
