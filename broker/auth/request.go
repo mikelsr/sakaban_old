@@ -10,13 +10,15 @@ import (
 type Request struct {
 	PubKey  string `json:"public_key"`
 	Problem string `json:"problem"`
+	Token   string `json:"token"`
 }
 
 // MakeRequest is the Request constructor
-func MakeRequest(pubKey *rsa.PublicKey, problem Problem) Request {
+func MakeRequest(pubKey *rsa.PublicKey, problem Problem, token string) Request {
 	return Request{
 		Problem: problem.Formulate(),
 		PubKey:  PrintPubKey(pubKey),
+		Token:   token,
 	}
 }
 
