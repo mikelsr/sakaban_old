@@ -8,18 +8,6 @@ import (
 	"testing"
 )
 
-func TestRequest_String(t *testing.T) {
-	problem := NewProblem()
-	aesKey := AESNewKey()
-	r1 := MakeRequest(pub, aesKey, problem, "testtoken")
-	str := r1.String()
-	r2 := new(Request)
-	err := json.Unmarshal([]byte(str), r2)
-	if err != nil {
-		t.FailNow()
-	}
-}
-
 func TestDecryptRequest(t *testing.T) {
 	problem := NewProblem()
 	aesKey := AESNewKey()
@@ -45,6 +33,31 @@ func TestDecryptRequest(t *testing.T) {
 		t.FailNow()
 	}
 	if !bytes.Equal(r1.AESKey, r3.AESKey) || r1.Problem != r3.Problem || r1.Token != r3.Token {
+		t.FailNow()
+	}
+}
+
+func TestEncryptedRequest_String(t *testing.T) {
+	problem := NewProblem()
+	aesKey := AESNewKey()
+	r := MakeRequest(pub, aesKey, problem, "testtoken")
+	eR1 := MakeEncryptedRequest(pub, &r)
+	str := eR1.String()
+	eR2 := new(EncryptedRequest)
+	err := json.Unmarshal([]byte(str), eR2)
+	if err != nil {
+		t.FailNow()
+	}
+}
+
+func TestRequest_String(t *testing.T) {
+	problem := NewProblem()
+	aesKey := AESNewKey()
+	r1 := MakeRequest(pub, aesKey, problem, "testtoken")
+	str := r1.String()
+	r2 := new(Request)
+	err := json.Unmarshal([]byte(str), r2)
+	if err != nil {
 		t.FailNow()
 	}
 }

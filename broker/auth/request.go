@@ -9,17 +9,8 @@ import (
 // encrypted with the peer's RSA key and the data the peer will need for
 // authentication encrypted with the AES key
 type EncryptedRequest struct {
-	Key  string `json:"string"`
-	Data string `json:"string"`
-}
-
-// MakeEncryptedRequest encrypts the AES key with the RSA key and the data
-// with the AES key
-func MakeEncryptedRequest(RSAkey *rsa.PublicKey, r *Request) EncryptedRequest {
-	eR := new(EncryptedRequest)
-	eR.Key = string(RSAEncrypt(RSAkey, r.AESKey))
-	eR.Data = string(AESEncrypt(r.AESKey, []byte(r.String())))
-	return *eR
+	Key  string `json:"key"`
+	Data string `json:"data"`
 }
 
 // Request is used to send the problem statement and public key of the
@@ -49,6 +40,15 @@ func DecryptRequest(eR EncryptedRequest, RSAkey *rsa.PrivateKey) (*Request, erro
 	return req, nil
 }
 
+// MakeEncryptedRequest encrypts the AES key with the RSA key and the data
+// with the AES key
+func MakeEncryptedRequest(RSAkey *rsa.PublicKey, r *Request) EncryptedRequest {
+	eR := new(EncryptedRequest)
+	eR.Key = string(RSAEncrypt(RSAkey, r.AESKey))
+	eR.Data = string(AESEncrypt(r.AESKey, []byte(r.String())))
+	return *eR
+}
+
 // MakeRequest is the Request constructor
 func MakeRequest(RSAkey *rsa.PublicKey, AESkey []byte, problem Problem, token string) Request {
 	return Request{
@@ -58,7 +58,13 @@ func MakeRequest(RSAkey *rsa.PublicKey, AESkey []byte, problem Problem, token st
 	}
 }
 
-// String returns a JSON string of the request
+// String returns a JSON of the EncryptedRequest
+func (eR *EncryptedRequest) String() string {
+	b, _ := json.Marshal(eR)
+	return string(b)
+}
+
+// String returns a JSON string of the Request
 func (r *Request) String() string {
 	b, _ := json.Marshal(r)
 	return string(b)
