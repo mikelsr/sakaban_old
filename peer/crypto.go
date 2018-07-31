@@ -5,20 +5,12 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-)
 
-// Decrypt decrypts data using the private key of the peer
-func (p *Peer) Decrypt(ciphertext []byte, seed io.Reader) ([]byte, error) {
-	data, err := rsa.DecryptPKCS1v15(seed, p.PrvKey, ciphertext)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
+	"bitbucket.org/mikelsr/sakaban/broker/auth"
+)
 
 // ExportRSAKeys calls ExportRSAPrvKey, ExportRSAPubKey to store 'prv' and 'pub' in 'dir'
 func ExportRSAKeys(dir string, prv *rsa.PrivateKey, pub *rsa.PublicKey) error {
@@ -104,6 +96,12 @@ func MarshalRSAPubKey(pub *rsa.PublicKey) ([]byte, error) {
 			Bytes: x509.MarshalPKCS1PublicKey(pub),
 		},
 	), nil
+}
+
+// RSADecrypt calls auth.RSADecrypt with p.PrvKey
+func (p *Peer) RSADecrypt(ciphertext []byte) []byte {
+	data, _ := auth.RSADecrypt(p.PrvKey, ciphertext)
+	return data
 }
 
 // UnmarshalRSAPrvKey unmarshals a private key from a PEM file
