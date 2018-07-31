@@ -18,26 +18,43 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-func TestDecrypt(t *testing.T) {
+func TestAESDecrypt(t *testing.T) {
+	aesKey := AESNewKey()
+	encrypted := []byte{42} // smaller than aes.BlockSize
+	if _, err := AESDecrypt(aesKey, encrypted); err == nil {
+		t.FailNow()
+	}
+}
+
+func TestAESEncrypt(t *testing.T) {
+	aesKey := AESNewKey()
+	data := []byte{42}
+	decrypted, err := AESDecrypt(aesKey, AESEncrypt(aesKey, data))
+	if err != nil || !bytes.Equal(decrypted, data) {
+		t.FailNow()
+	}
+}
+
+func TestRSADecrypt(t *testing.T) {
 	wrongKey, _ := rsa.GenerateKey(rand.Reader, 1024)
-	encrypted := Encrypt(pub, testData)
+	encrypted := RSAEncrypt(pub, testData)
 
 	// decrypt with wrong key
-	_, err := Decrypt(wrongKey, encrypted)
+	_, err := RSADecrypt(wrongKey, encrypted)
 	if err == nil {
 		t.FailNow()
 	}
 
 	// decrypt with correct key
-	decrypted, err := Decrypt(prv, encrypted)
+	decrypted, err := RSADecrypt(prv, encrypted)
 	if err != nil || !bytes.Equal(testData, decrypted) {
 		t.FailNow()
 	}
 }
 
-func TestEncrypt(t *testing.T) {
-	encrypted := Encrypt(pub, testData)
-	decrypted, _ := Decrypt(prv, encrypted)
+func TestRSAEncrypt(t *testing.T) {
+	encrypted := RSAEncrypt(pub, testData)
+	decrypted, _ := RSADecrypt(prv, encrypted)
 	if !bytes.Equal(testData, decrypted) {
 		t.FailNow()
 	}
