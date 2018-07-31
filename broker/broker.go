@@ -18,8 +18,8 @@ import (
 
 // Broker stores information about peers indexed by their public key
 type Broker struct {
-	auths map[token]session
-	peers map[string]client
+	Auths map[token]session
+	Peers map[string]Client
 }
 
 type token string
@@ -27,8 +27,8 @@ type token string
 // NewBroker should be used as the only constructor for Broker
 func NewBroker() *Broker {
 	b := new(Broker)
-	b.auths = make(map[token]session)
-	b.peers = make(map[string]client)
+	b.Auths = make(map[token]session)
+	b.Peers = make(map[string]Client)
 	return b
 }
 
@@ -46,7 +46,7 @@ func newToken() token {
 func (b *Broker) genToken() token {
 	t := newToken()
 	for {
-		if _, found := b.auths[t]; !found {
+		if _, found := b.Auths[t]; !found {
 			return t
 		}
 		t = newToken()
@@ -61,7 +61,7 @@ func (b *Broker) handleAuth(w http.ResponseWriter, r *http.Request) {
 		sendStatus(w, http.StatusUnauthorized)
 	}
 
-	s, found := b.auths[token(t)]
+	s, found := b.Auths[token(t)]
 	if !found {
 		sendStatus(w, http.StatusNotFound)
 		return
@@ -87,7 +87,7 @@ func (b *Broker) handleAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// update peer
-	b.peers[s.peerKey] = s.changes
+	b.Peers[s.peerKey] = s.changes
 	sendStatus(w, http.StatusOK)
 }
 
@@ -126,10 +126,10 @@ func (b *Broker) handlePeer(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// handlePeerGET looks for the public key in Broker.peers and retuns it
+// handlePeerGET looks for the public key in Broker.Peers and retuns it
 // marshalled if found
 func (b *Broker) handlePeerGET(w http.ResponseWriter, r *http.Request, pubKeyStr string) {
-	if c, found := b.peers[pubKeyStr]; found {
+	if c, found := b.Peers[pubKeyStr]; found {
 		response, _ := json.Marshal(c)
 		sendStatus(w, http.StatusOK)
 		w.Write(response)
@@ -138,10 +138,10 @@ func (b *Broker) handlePeerGET(w http.ResponseWriter, r *http.Request, pubKeyStr
 	}
 }
 
-// handlePeerPOST registers/updates a client in Broker.peers
+// handlePeerPOST registers/updates a client in Broker.Peers
 func (b *Broker) handlePeerPOST(w http.ResponseWriter, r *http.Request, pubKeyStr string, pubKey *rsa.PublicKey) {
 	// unmarshall client (peer) from body
-	var c client
+	var c Client
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&c)
 	if err != nil {
@@ -149,7 +149,7 @@ func (b *Broker) handlePeerPOST(w http.ResponseWriter, r *http.Request, pubKeySt
 		return
 	}
 	// verify integrity of client struct
-	if ok, er := c.ok(); !ok {
+	if ok, er := c.Ok(); !ok {
 		sendStatus(w, http.StatusBadRequest)
 		w.Write([]byte(fmt.Sprint(er)))
 		return
@@ -158,7 +158,7 @@ func (b *Broker) handlePeerPOST(w http.ResponseWriter, r *http.Request, pubKeySt
 	// create session for peer
 	t := b.genToken()
 	s := makeSession(pubKeyStr, c)
-	b.auths[t] = s
+	b.Auths[t] = s
 	// creathe authentication request and encrypt it
 	authReq := auth.MakeRequest(s.aesKey, auth.PrintPubKey(s.pub), s.prob, string(t))
 	encryptedAuthReq := auth.MakeEncryptedRequest(pubKey, &authReq)

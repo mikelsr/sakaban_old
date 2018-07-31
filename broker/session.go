@@ -10,14 +10,14 @@ import (
 // session stores details for an authorization session
 type session struct {
 	aesKey  []byte
-	changes client
+	changes Client
 	peerKey string
 	prob    auth.Problem
 	prv     *rsa.PrivateKey
 	pub     *rsa.PublicKey
 }
 
-func makeSession(rsaKey string, changes client) session {
+func makeSession(rsaKey string, changes Client) session {
 	prv, _ := rsa.GenerateKey(rand.Reader, keySize)
 	aesKey := make([]byte, 32)
 	rand.Read(aesKey)

@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 func TestBroker_genToken(t *testing.T) {
 	b := NewBroker()
 	t1 := newToken()
-	b.auths[t1] = *new(session)
+	b.Auths[t1] = *new(session)
 	t2 := b.genToken()
 	if t1 == t2 {
 		t.FailNow()
@@ -147,7 +147,7 @@ func TestBroker_handlePeerGET(t *testing.T) {
 		t.FailNow()
 	}
 	// register test peer
-	testBroker.peers[pubKeyAlt] = client{
+	testBroker.Peers[pubKeyAlt] = Client{
 		PeerID:    "g1",
 		MultiAddr: "/ip4/0.0.0.0/tcp/3001",
 	}
@@ -176,7 +176,7 @@ func TestBroker_handlePeerPOST(t *testing.T) {
 		t.FailNow()
 	}
 	// peer should not be registered
-	if _, found := testBroker.peers[pubKey]; found {
+	if _, found := testBroker.Peers[pubKey]; found {
 		t.FailNow()
 	}
 
@@ -185,7 +185,7 @@ func TestBroker_handlePeerPOST(t *testing.T) {
 		t.FailNow()
 	}
 	// ommit auth, manually register peer
-	testBroker.peers[pubKey] = client{
+	testBroker.Peers[pubKey] = Client{
 		PeerID:    "p1",
 		MultiAddr: "/ip4/0.0.0.0/tcp/3001",
 	}
@@ -195,7 +195,7 @@ func TestBroker_handlePeerPOST(t *testing.T) {
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	c := new(client)
+	c := new(Client)
 	err := decoder.Decode(c)
 	if err != nil {
 		t.FailNow()
@@ -216,7 +216,7 @@ func getTestPeer(pk string) (*http.Response, error) {
 
 // getTestPeer posts a peer to a broker running in the default address
 func postTestPeer(pk string, pid string, ma string) (*http.Response, error) {
-	peer := new(client)
+	peer := new(Client)
 	peer.PeerID = pid
 	peer.MultiAddr = ma
 

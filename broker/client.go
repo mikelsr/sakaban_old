@@ -6,15 +6,15 @@ import (
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
-// client stores the ID and MultiAddr of a peer
-type client struct {
+// Client stores the ID and MultiAddr of a peer
+type Client struct {
 	PeerID    string `json:"peer_id"`
 	MultiAddr string `json:"multiaddr"`
 	// TODO: timeout?
 }
 
-// ok checks that attributes are set and multiaddr is valid
-func (c client) ok() (bool, error) {
+// Ok checks that attributes are set and multiaddr is valid
+func (c Client) Ok() (bool, error) {
 	if c.PeerID == "" {
 		return false, errors.New("PeerID can't be empty")
 	}
