@@ -11,7 +11,7 @@ import (
 func TestDecryptRequest(t *testing.T) {
 	problem := NewProblem()
 	aesKey := AESNewKey()
-	r1 := MakeRequest(pub, aesKey, problem, "testtoken")
+	r1 := MakeRequest(aesKey, pubKey, problem, "testtoken")
 	eR := MakeEncryptedRequest(pub, &r1)
 
 	// invalid rsa private key
@@ -40,7 +40,7 @@ func TestDecryptRequest(t *testing.T) {
 func TestEncryptedRequest_String(t *testing.T) {
 	problem := NewProblem()
 	aesKey := AESNewKey()
-	r := MakeRequest(pub, aesKey, problem, "testtoken")
+	r := MakeRequest(aesKey, pubKey, problem, "testtoken")
 	eR1 := MakeEncryptedRequest(pub, &r)
 	str := eR1.String()
 	eR2 := new(EncryptedRequest)
@@ -53,7 +53,7 @@ func TestEncryptedRequest_String(t *testing.T) {
 func TestRequest_String(t *testing.T) {
 	problem := NewProblem()
 	aesKey := AESNewKey()
-	r1 := MakeRequest(pub, aesKey, problem, "testtoken")
+	r1 := MakeRequest(aesKey, pubKey, problem, "testtoken")
 	str := r1.String()
 	r2 := new(Request)
 	err := json.Unmarshal([]byte(str), r2)

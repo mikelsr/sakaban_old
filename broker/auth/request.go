@@ -2,6 +2,7 @@ package auth
 
 import (
 	"crypto/rsa"
+	"encoding/base64"
 	"encoding/json"
 )
 
@@ -16,14 +17,20 @@ type EncryptedRequest struct {
 // Request is used to send the problem statement and public key of the
 // broker session
 type Request struct {
-	AESKey  []byte
-	Problem string `json:"problem"`
-	Token   string `json:"token"`
+	AESKey       []byte
+	BrokerRSAKey string `json:"broker_rsa_key"`
+	Problem      string `json:"problem"`
+	Token        string `json:"token"`
 }
 
 // DecryptRequest decrypts an EncryptedRequest given the RSA private key
 func DecryptRequest(eR EncryptedRequest, RSAkey *rsa.PrivateKey) (*Request, error) {
-	aesKey, err := RSADecrypt(RSAkey, []byte(eR.Key))
+	//aesKey, err := RSADecrypt(RSAkey, []byte(eR.Key))
+	aesKeyStr, err := base64.StdEncoding.DecodeString(eR.Key)
+	if err != nil {
+		return nil, err
+	}
+	aesKey, err := RSADecrypt(RSAkey, []byte(aesKeyStr))
 	if err != nil {
 		return nil, err
 	}
@@ -44,17 +51,19 @@ func DecryptRequest(eR EncryptedRequest, RSAkey *rsa.PrivateKey) (*Request, erro
 // with the AES key
 func MakeEncryptedRequest(RSAkey *rsa.PublicKey, r *Request) EncryptedRequest {
 	eR := new(EncryptedRequest)
-	eR.Key = string(RSAEncrypt(RSAkey, r.AESKey))
+	//eR.Key = string(RSAEncrypt(RSAkey, r.AESKey))
+	eR.Key = base64.StdEncoding.EncodeToString(RSAEncrypt(RSAkey, r.AESKey))
 	eR.Data = string(AESEncrypt(r.AESKey, []byte(r.String())))
 	return *eR
 }
 
 // MakeRequest is the Request constructor
-func MakeRequest(RSAkey *rsa.PublicKey, AESkey []byte, problem Problem, token string) Request {
+func MakeRequest(AESkey []byte, brokerKey string, problem Problem, token string) Request {
 	return Request{
-		AESKey:  AESkey,
-		Problem: problem.Formulate(),
-		Token:   token,
+		AESKey:       AESkey,
+		BrokerRSAKey: brokerKey,
+		Problem:      problem.Formulate(),
+		Token:        token,
 	}
 }
 
