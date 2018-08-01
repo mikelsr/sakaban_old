@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 
 	"bitbucket.org/mikelsr/sakaban/broker"
 	"bitbucket.org/mikelsr/sakaban/broker/auth"
@@ -18,6 +19,12 @@ import (
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
+// Info stores information about external peers
+type Info struct {
+	Addr   string `json:"multiaddr"`
+	PeerID string `json:"peer_id"`
+}
+
 // Peer represents an individual device
 type Peer struct {
 	BrokerIP   string    // IPv4 address of the host
@@ -26,6 +33,17 @@ type Peer struct {
 	// PrvKey and PubKey are used to verify the identity of the Peer
 	PrvKey *rsa.PrivateKey
 	PubKey *rsa.PublicKey
+}
+
+// BrokerAddr returns the formatted address of the broker assigned to the peer
+func (p *Peer) BrokerAddr() string {
+	return fmt.Sprintf("%s:%d", p.BrokerIP, p.BrokerPort)
+}
+
+// MultiAddr returns a MultiAddr struct from the Info.Addr string
+func (i *Info) MultiAddr() multiaddr.Multiaddr {
+	ma, _ := multiaddr.NewMultiaddr(i.Addr)
+	return ma
 }
 
 // NewPeer creates a peer with a NEW PAIR OF KEYS
@@ -74,9 +92,29 @@ func NewPeer() (*Peer, error) {
 	}, nil
 }
 
-// BrokerAddr returns the formatted address of the broker assigned to the peer
-func (p *Peer) BrokerAddr() string {
-	return fmt.Sprintf("%s:%d", p.BrokerIP, p.BrokerPort)
+// RequestPeer obtains info about a peer from a broker given the public key
+// of the peer
+func (p *Peer) RequestPeer(publicKey string) (*Info, error) {
+	r, err := http.Get(fmt.Sprintf("http://%s/peer?publicKey=%s",
+		p.BrokerAddr(), url.QueryEscape(publicKey)))
+	if err != nil {
+		return nil, err
+	}
+	if r.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("couldn't retrieve peer '%s': '%s'",
+			publicKey, r.Status)
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	pi := new(Info)
+	err = json.Unmarshal(body, pi)
+	if err != nil {
+		return nil, err
+	}
+	return pi, nil
 }
 
 // UpdateInfo updates info about peer 'p' at the Broker

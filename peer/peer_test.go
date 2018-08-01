@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"bitbucket.org/mikelsr/sakaban/broker"
+	"bitbucket.org/mikelsr/sakaban/broker/auth"
 )
 
 func TestMain(m *testing.M) {
@@ -35,6 +36,30 @@ func TestMain(m *testing.M) {
 	m.Run()
 	// cleanup
 	os.RemoveAll(testDir)
+}
+
+func TestPeer_RequestPeer(t *testing.T) {
+	p, _ := NewPeer()
+	port := p.BrokerPort
+	p.BrokerPort = 0
+	// invalid port
+	_, err := p.RequestPeer("")
+	if err == nil {
+		t.FailNow()
+	}
+	p.BrokerPort = port
+	// invalid key
+	_, err = p.RequestPeer("")
+	if err == nil {
+		t.FailNow()
+	}
+	// post self
+	p.UpdateInfo()
+	// successfully request self
+	_, err = p.RequestPeer(auth.PrintPubKey(p.PubKey))
+	if err != nil {
+		t.FailNow()
+	}
 }
 
 func TestPeer_UpdateInfo(t *testing.T) {
