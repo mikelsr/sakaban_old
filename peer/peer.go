@@ -10,8 +10,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"bitbucket.org/mikelsr/sakaban/broker"
-	"bitbucket.org/mikelsr/sakaban/broker/auth"
+	"bitbucket.org/mikelsr/sakaban-broker/auth"
+	"bitbucket.org/mikelsr/sakaban-broker/broker"
 	libp2p "github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-crypto"
 	host "github.com/libp2p/go-libp2p-host"
