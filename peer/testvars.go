@@ -3,7 +3,7 @@ package peer
 import (
 	"fmt"
 
-	"bitbucket.org/mikelsr/sakaban/broker"
+	"bitbucket.org/mikelsr/sakaban-broker/broker"
 )
 
 const (

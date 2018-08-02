@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"bitbucket.org/mikelsr/sakaban/broker/auth"
+	"bitbucket.org/mikelsr/sakaban-broker/auth"
 )
 
 // ExportRSAKeys calls ExportRSAPrvKey, ExportRSAPubKey to store 'prv' and 'pub' in 'dir'

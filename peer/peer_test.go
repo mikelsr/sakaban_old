@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"bitbucket.org/mikelsr/sakaban/broker"
-	"bitbucket.org/mikelsr/sakaban/broker/auth"
+	"bitbucket.org/mikelsr/sakaban-broker/auth"
+	"bitbucket.org/mikelsr/sakaban-broker/broker"
 )
 
 func TestMain(m *testing.M) {

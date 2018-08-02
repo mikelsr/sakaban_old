@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"bitbucket.org/mikelsr/sakaban/broker/auth"
+	"bitbucket.org/mikelsr/sakaban-broker/auth"
 )
 
 func TestExportRSAKeys(t *testing.T) {
