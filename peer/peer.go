@@ -28,8 +28,8 @@ type Peer struct {
 	Contacts   []Contact `json:"contacts"` // List of trusted contacts
 	Host       host.Host `json:"-"`        // Host is the libp2p host
 	// PrvKey and PubKey are used to verify the identity of the Peer
-	PrvKey *rsa.PrivateKey
-	PubKey *rsa.PublicKey
+	PrvKey *rsa.PrivateKey `json:"-"`
+	PubKey *rsa.PublicKey  `json:"-"`
 }
 
 // BrokerAddr returns the formatted address of the broker assigned to the peer
