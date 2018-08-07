@@ -54,7 +54,7 @@ func TestPeer_RequestPeer(t *testing.T) {
 		t.FailNow()
 	}
 	// post self
-	p.UpdateInfo()
+	p.Register()
 	// successfully request self
 	_, err = p.RequestPeer(auth.PrintPubKey(p.PubKey))
 	if err != nil {
@@ -62,9 +62,9 @@ func TestPeer_RequestPeer(t *testing.T) {
 	}
 }
 
-func TestPeer_UpdateInfo(t *testing.T) {
+func TestPeer_Register(t *testing.T) {
 	p, _ := NewPeer()
-	err := p.UpdateInfo()
+	err := p.Register()
 	if err != nil {
 		fmt.Println(err)
 		t.FailNow()

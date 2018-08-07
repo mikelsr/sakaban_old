@@ -19,8 +19,8 @@ import (
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
-// Info stores information about external peers
-type Info struct {
+// Contact stores information about external peers
+type Contact struct {
 	Addr   string `json:"multiaddr"`
 	PeerID string `json:"peer_id"`
 }
@@ -40,9 +40,9 @@ func (p *Peer) BrokerAddr() string {
 	return fmt.Sprintf("%s:%d", p.BrokerIP, p.BrokerPort)
 }
 
-// MultiAddr returns a MultiAddr struct from the Info.Addr string
-func (i *Info) MultiAddr() multiaddr.Multiaddr {
-	ma, _ := multiaddr.NewMultiaddr(i.Addr)
+// MultiAddr returns a MultiAddr struct from the Contact.Addr string
+func (c *Contact) MultiAddr() multiaddr.Multiaddr {
+	ma, _ := multiaddr.NewMultiaddr(c.Addr)
 	return ma
 }
 
@@ -94,7 +94,7 @@ func NewPeer() (*Peer, error) {
 
 // RequestPeer obtains info about a peer from a broker given the public key
 // of the peer
-func (p *Peer) RequestPeer(publicKey string) (*Info, error) {
+func (p *Peer) RequestPeer(publicKey string) (*Contact, error) {
 	r, err := http.Get(fmt.Sprintf("http://%s/peer?publicKey=%s",
 		p.BrokerAddr(), url.QueryEscape(publicKey)))
 	if err != nil {
@@ -109,16 +109,16 @@ func (p *Peer) RequestPeer(publicKey string) (*Info, error) {
 	if err != nil {
 		return nil, err
 	}
-	pi := new(Info)
-	err = json.Unmarshal(body, pi)
+	c := new(Contact)
+	err = json.Unmarshal(body, c)
 	if err != nil {
 		return nil, err
 	}
-	return pi, nil
+	return c, nil
 }
 
-// UpdateInfo updates info about peer 'p' at the Broker
-func (p *Peer) UpdateInfo() error {
+// Register updates info about peer 'p' at the Broker
+func (p *Peer) Register() error {
 	// create client
 	c := broker.Client{
 		PeerID:    p.Host.ID().String(),
