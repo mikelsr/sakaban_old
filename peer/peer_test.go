@@ -2,6 +2,7 @@ package peer
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,6 +24,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		os.Exit(1)
 	}
+	os.Mkdir(filepath.Join(testDir, "peer"), 0755)
 	os.MkdirAll(testFailDir, 0000)
 
 	// export necessary keys for testing
@@ -36,6 +38,51 @@ func TestMain(m *testing.M) {
 	m.Run()
 	// cleanup
 	os.RemoveAll(testDir)
+}
+
+func TestExport(t *testing.T) {
+	p, _ := NewPeer()
+
+	err := p.Export(filepath.Join(testFailDir, "export"))
+	if err == nil {
+		t.FailNow()
+	}
+
+	// export to non-writeable directory
+	err = p.Export(testFailDir)
+	if err == nil {
+		t.FailNow()
+	}
+
+	// correct export
+	dir := filepath.Join(testDir, "peer", "export")
+	err = p.Export(dir)
+	if err != nil {
+		t.FailNow()
+	}
+	files, _ := ioutil.ReadDir(dir)
+	if len(files) != 3 {
+		t.FailNow()
+	}
+}
+
+func TestImport(t *testing.T) {
+	// import from empty folder
+	_, err := Import(testFailDir)
+	if err == nil {
+		t.FailNow()
+	}
+
+	// correct export
+	p, _ := NewPeer()
+	dir := filepath.Join(testDir, "peer", "import")
+	p.Export(dir)
+	// correct import
+	p, err = Import(dir)
+	if err != nil {
+		fmt.Println(err)
+		t.FailNow()
+	}
 }
 
 func TestPeer_RequestPeer(t *testing.T) {

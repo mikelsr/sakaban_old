@@ -10,6 +10,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 
 	"bitbucket.org/mikelsr/sakaban-broker/auth"
 	"bitbucket.org/mikelsr/sakaban-broker/broker"
@@ -19,17 +21,12 @@ import (
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
-// Contact stores information about external peers
-type Contact struct {
-	Addr   string `json:"multiaddr"`
-	PeerID string `json:"peer_id"`
-}
-
 // Peer represents an individual device
 type Peer struct {
 	BrokerIP   string    // IPv4 address of the host
 	BrokerPort int       // TCP port of the host
-	Host       host.Host // Host is the libp2p host
+	Contacts   []Contact `json:"contacts"` // List of trusted contacts
+	Host       host.Host `json:"-"`        // Host is the libp2p host
 	// PrvKey and PubKey are used to verify the identity of the Peer
 	PrvKey *rsa.PrivateKey
 	PubKey *rsa.PublicKey
@@ -40,10 +37,54 @@ func (p *Peer) BrokerAddr() string {
 	return fmt.Sprintf("%s:%d", p.BrokerIP, p.BrokerPort)
 }
 
-// MultiAddr returns a MultiAddr struct from the Contact.Addr string
-func (c *Contact) MultiAddr() multiaddr.Multiaddr {
-	ma, _ := multiaddr.NewMultiaddr(c.Addr)
-	return ma
+// CleanUp removes all exportable elements of a peer from a 'dir' directory
+func CleanUp(dir string) {
+	os.Remove(filepath.Join(dir, filenamePeer))
+	os.Remove(filepath.Join(dir, filenamePrv))
+	os.Remove(filepath.Join(dir, filenamePub))
+}
+
+// Export marshals the Peer struct and its keys into files located in 'dir'
+func (p *Peer) Export(dir string) error {
+	err := os.MkdirAll(dir, permissionDir)
+	if err != nil {
+		CleanUp(dir)
+		return err
+	}
+
+	b, _ := json.Marshal(p)
+	err = ioutil.WriteFile(filepath.Join(dir, filenamePeer), b, permissionFile)
+	if err != nil {
+		CleanUp(dir)
+		return err
+	}
+
+	err = ExportRSAKeys(dir, p.PrvKey, p.PubKey)
+	if err != nil {
+		CleanUp(dir)
+		return err
+	}
+
+	return err
+}
+
+// Import unmarshals a Peer from a directory containing the struct and keys
+func Import(dir string) (*Peer, error) {
+	b, err := ioutil.ReadFile(filepath.Join(dir, filenamePeer))
+	if err != nil {
+		return nil, err
+	}
+	prv, pub, err := ImportRSAKeys(dir)
+	if err != nil {
+		return nil, err
+	}
+	p := new(Peer)
+	err = json.Unmarshal(b, p)
+	if err != nil {
+		return nil, err
+	}
+	p.PrvKey, p.PubKey = prv, pub
+	return p, nil
 }
 
 // NewPeer creates a peer with a NEW PAIR OF KEYS
@@ -90,31 +131,6 @@ func NewPeer() (*Peer, error) {
 		PrvKey:     prv,
 		PubKey:     &prv.PublicKey,
 	}, nil
-}
-
-// RequestPeer obtains info about a peer from a broker given the public key
-// of the peer
-func (p *Peer) RequestPeer(publicKey string) (*Contact, error) {
-	r, err := http.Get(fmt.Sprintf("http://%s/peer?publicKey=%s",
-		p.BrokerAddr(), url.QueryEscape(publicKey)))
-	if err != nil {
-		return nil, err
-	}
-	if r.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("couldn't retrieve peer '%s': '%s'",
-			publicKey, r.Status)
-	}
-
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	c := new(Contact)
-	err = json.Unmarshal(body, c)
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
 }
 
 // Register updates info about peer 'p' at the Broker
@@ -176,4 +192,29 @@ func (p *Peer) Register() error {
 	}
 	// no errors
 	return nil
+}
+
+// RequestPeer obtains info about a peer from a broker given the public key
+// of the peer
+func (p *Peer) RequestPeer(publicKey string) (*Contact, error) {
+	r, err := http.Get(fmt.Sprintf("http://%s/peer?publicKey=%s",
+		p.BrokerAddr(), url.QueryEscape(publicKey)))
+	if err != nil {
+		return nil, err
+	}
+	if r.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("couldn't retrieve peer '%s': '%s'",
+			publicKey, r.Status)
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	c := new(Contact)
+	err = json.Unmarshal(body, c)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }
