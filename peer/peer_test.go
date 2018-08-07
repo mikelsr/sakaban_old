@@ -41,22 +41,20 @@ func TestMain(m *testing.M) {
 }
 
 func TestExport(t *testing.T) {
-	p, _ := NewPeer()
-
-	err := p.Export(filepath.Join(testFailDir, "export"))
+	err := testPeer.Export(filepath.Join(testFailDir, "export"))
 	if err == nil {
 		t.FailNow()
 	}
 
 	// export to non-writeable directory
-	err = p.Export(testFailDir)
+	err = testPeer.Export(testFailDir)
 	if err == nil {
 		t.FailNow()
 	}
 
 	// correct export
 	dir := filepath.Join(testDir, "peer", "export")
-	err = p.Export(dir)
+	err = testPeer.Export(dir)
 	if err != nil {
 		t.FailNow()
 	}
@@ -74,11 +72,10 @@ func TestImport(t *testing.T) {
 	}
 
 	// correct export
-	p, _ := NewPeer()
 	dir := filepath.Join(testDir, "peer", "import")
-	p.Export(dir)
+	testPeer.Export(dir)
 	// correct import
-	p, err = Import(dir)
+	_, err = Import(dir)
 	if err != nil {
 		fmt.Println(err)
 		t.FailNow()
@@ -110,8 +107,7 @@ func TestPeer_RequestPeer(t *testing.T) {
 }
 
 func TestPeer_Register(t *testing.T) {
-	p, _ := NewPeer()
-	err := p.Register()
+	err := testPeer.Register()
 	if err != nil {
 		fmt.Println(err)
 		t.FailNow()
