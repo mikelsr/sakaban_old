@@ -1,6 +1,7 @@
 package peer
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/rand"
@@ -15,13 +16,18 @@ import (
 
 	"bitbucket.org/mikelsr/sakaban-broker/auth"
 	"bitbucket.org/mikelsr/sakaban-broker/broker"
+
 	libp2p "github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-crypto"
 	host "github.com/libp2p/go-libp2p-host"
+	net "github.com/libp2p/go-libp2p-net"
+	p2peer "github.com/libp2p/go-libp2p-peer"
+
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
 // Peer represents an individual device
+// TODO: store what peers have been already added to host.PeerStore
 type Peer struct {
 	BrokerIP   string    // IPv4 address of the host
 	BrokerPort int       // TCP port of the host
@@ -42,6 +48,15 @@ func CleanUp(dir string) {
 	os.Remove(filepath.Join(dir, filenamePeer))
 	os.Remove(filepath.Join(dir, filenamePrv))
 	os.Remove(filepath.Join(dir, filenamePub))
+}
+
+// ConnectTo stablishes connection with another peer and returns the net.Stream
+func (p Peer) ConnectTo(c Contact) (net.Stream, error) {
+	s, err := p.Host.NewStream(context.Background(), c.ID(), "/sakaban/v0.0.0")
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
 }
 
 // Export marshals the Peer struct and its keys into files located in 'dir'
@@ -66,6 +81,16 @@ func (p *Peer) Export(dir string) error {
 	}
 
 	return err
+}
+
+// HandleStream is the background function responding to incoming connections
+func (p Peer) HandleStream(s net.Stream) {
+	buf := bufio.NewReader(s)
+	recv, err := buf.ReadString('\n')
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Received: %x", recv)
 }
 
 // Import unmarshals a Peer from a directory containing the struct and keys
@@ -137,7 +162,7 @@ func NewPeer() (*Peer, error) {
 func (p *Peer) Register() error {
 	// create client
 	c := broker.Client{
-		PeerID:    p.Host.ID().String(),
+		PeerID:    p2peer.IDB58Encode(p.Host.ID()),
 		MultiAddr: p.Host.Addrs()[0].String(),
 	}
 	// marshal client
@@ -216,5 +241,6 @@ func (p *Peer) RequestPeer(publicKey string) (*Contact, error) {
 	if err != nil {
 		return nil, err
 	}
+	c.RSAPubKEy = publicKey
 	return c, nil
 }

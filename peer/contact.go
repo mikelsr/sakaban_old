@@ -7,13 +7,14 @@ import (
 
 // Contact stores information about external peers
 type Contact struct {
-	Addr   string `json:"multiaddr"`
-	PeerID string `json:"peer_id"`
+	Addr      string `json:"multiaddr"`
+	PeerID    string `json:"peer_id"`
+	RSAPubKEy string `json:"rsa_public_key"`
 }
 
 // ID returns a libp2p-peer.ID from Contact.ID
 func (c Contact) ID() p2peer.ID {
-	id, _ := p2peer.IDFromString(c.PeerID)
+	id, _ := p2peer.IDB58Decode(c.PeerID)
 	return id
 }
 

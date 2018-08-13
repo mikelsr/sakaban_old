@@ -1,6 +1,7 @@
 package peer
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -9,6 +10,11 @@ import (
 
 	"bitbucket.org/mikelsr/sakaban-broker/auth"
 	"bitbucket.org/mikelsr/sakaban-broker/broker"
+
+	libp2p "github.com/libp2p/go-libp2p"
+	p2peer "github.com/libp2p/go-libp2p-peer"
+	pstore "github.com/libp2p/go-libp2p-peerstore"
+	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
 func TestMain(m *testing.M) {
@@ -40,7 +46,44 @@ func TestMain(m *testing.M) {
 	os.RemoveAll(testDir)
 }
 
-func TestExport(t *testing.T) {
+func TestPeer_ConnectTo(t *testing.T) {
+	// create incorrect peer
+	p, _ := NewPeer()
+	wrongContact := Contact{
+		Addr:   "/ip4/127.0.0.0/tcp/1",
+		PeerID: p2peer.IDB58Encode(p.Host.ID()),
+	}
+	// add incorrect peer to peerstore
+	testPeer.Host.Peerstore().AddAddr(wrongContact.ID(),
+		wrongContact.MultiAddr(), pstore.PermanentAddrTTL)
+	// connect to invalid peer
+	_, err := testPeer.ConnectTo(wrongContact)
+	if err == nil {
+		t.FailNow()
+	}
+
+	// create valid peer listening in unused addr
+	p, _ = NewPeer()
+	addr, _ := multiaddr.NewMultiaddr("/ip4/0.0.0.0/tcp/3002")
+	options := []libp2p.Option{
+		libp2p.ListenAddrs(addr), // listeing multiaddr
+	}
+	h, _ := libp2p.New(context.Background(), options...)
+	p.Host = h
+	// set stream handler of new peer
+	p.Host.SetStreamHandler("/sakaban/v0.0.0", p.HandleStream)
+	// register and retrieve peer at test broker
+	p.Register()
+	c, _ := p.RequestPeer(auth.PrintPubKey(p.PubKey))
+	// add valid peer to peerstore
+	testPeer.Host.Peerstore().AddAddr(c.ID(), c.MultiAddr(), pstore.PermanentAddrTTL)
+	_, err = testPeer.ConnectTo(*c)
+	if err != nil {
+		t.FailNow()
+	}
+}
+
+func TestPeer_Export(t *testing.T) {
 	err := testPeer.Export(filepath.Join(testFailDir, "export"))
 	if err == nil {
 		t.FailNow()
