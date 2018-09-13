@@ -53,7 +53,7 @@ func CleanUp(dir string) {
 
 // ConnectTo stablishes connection with another peer and returns the net.Stream
 func (p Peer) ConnectTo(c Contact) (net.Stream, error) {
-	s, err := p.Host.NewStream(context.Background(), c.ID(), "/sakaban/v0.0.0")
+	s, err := p.Host.NewStream(context.Background(), c.ID(), protocolID)
 	if err != nil {
 		return nil, err
 	}

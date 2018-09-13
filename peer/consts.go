@@ -10,4 +10,5 @@ const (
 	listenMultiAddr = "/ip4/0.0.0.0/tcp/3001"
 	permissionDir   = 0750
 	permissionFile  = 0750
+	protocolID      = "/sakaban/v0.0.0"
 )

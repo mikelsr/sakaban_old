@@ -89,7 +89,7 @@ func TestPeer_ConnectTo(t *testing.T) {
 	h, _ := libp2p.New(context.Background(), options...)
 	p.Host = h
 	// set stream handler of new peer
-	p.Host.SetStreamHandler("/sakaban/v0.0.0", p.HandleStream)
+	p.Host.SetStreamHandler(protocolID, p.HandleStream)
 	// register and retrieve peer at test broker
 	p.Register()
 	c, _ := p.RequestPeer(auth.PrintPubKey(p.PubKey))
@@ -135,7 +135,7 @@ func TestPeer_HandleStream(t *testing.T) {
 	h, _ := libp2p.New(context.Background(), options...)
 	p.Host = h
 	// set stream handler of new peer
-	p.Host.SetStreamHandler("/sakaban/v0.0.0", p.HandleStream)
+	p.Host.SetStreamHandler(protocolID, p.HandleStream)
 	// register and retrieve peer at test broker
 	p.Register()
 	c, _ := p.RequestPeer(auth.PrintPubKey(p.PubKey))
