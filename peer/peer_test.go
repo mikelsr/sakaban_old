@@ -46,6 +46,24 @@ func TestMain(m *testing.M) {
 	os.RemoveAll(testDir)
 }
 
+func TestImport(t *testing.T) {
+	// import from empty folder
+	_, err := Import(testFailDir)
+	if err == nil {
+		t.FailNow()
+	}
+
+	// correct export
+	dir := filepath.Join(testDir, "peer", "import")
+	testPeer.Export(dir)
+	// correct import
+	_, err = Import(dir)
+	if err != nil {
+		fmt.Println(err)
+		t.FailNow()
+	}
+}
+
 func TestPeer_ConnectTo(t *testing.T) {
 	// create incorrect peer
 	p, _ := NewPeer()
@@ -107,20 +125,30 @@ func TestPeer_Export(t *testing.T) {
 	}
 }
 
-func TestImport(t *testing.T) {
-	// import from empty folder
-	_, err := Import(testFailDir)
-	if err == nil {
+func TestPeer_HandleStream(t *testing.T) {
+	// create valid peer listening in unused addr
+	p, _ := NewPeer()
+	addr, _ := multiaddr.NewMultiaddr("/ip4/0.0.0.0/tcp/3002")
+	options := []libp2p.Option{
+		libp2p.ListenAddrs(addr), // listeing multiaddr
+	}
+	h, _ := libp2p.New(context.Background(), options...)
+	p.Host = h
+	// set stream handler of new peer
+	p.Host.SetStreamHandler("/sakaban/v0.0.0", p.HandleStream)
+	// register and retrieve peer at test broker
+	p.Register()
+	c, _ := p.RequestPeer(auth.PrintPubKey(p.PubKey))
+	// add valid peer to peerstore
+	testPeer.Host.Peerstore().AddAddr(c.ID(), c.MultiAddr(), pstore.PermanentAddrTTL)
+	s, err := testPeer.ConnectTo(*c)
+	if err != nil {
 		t.FailNow()
 	}
 
-	// correct export
-	dir := filepath.Join(testDir, "peer", "import")
-	testPeer.Export(dir)
-	// correct import
-	_, err = Import(dir)
-	if err != nil {
-		fmt.Println(err)
+	// begin HandleStream test
+	msg := []byte("Hello world!\n")
+	if n, err := s.Write(msg); n != len(msg) || err != nil {
 		t.FailNow()
 	}
 }

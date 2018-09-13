@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -90,7 +91,10 @@ func (p Peer) HandleStream(s net.Stream) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Received: %x", recv)
+
+	// log received data
+	prettyID := p.Host.ID().Pretty()
+	log.Printf("[P_%s]\tReceived: %s", prettyID[len(prettyID)-4:], recv)
 }
 
 // Import unmarshals a Peer from a directory containing the struct and keys
