@@ -32,8 +32,9 @@ import (
 type Peer struct {
 	BrokerIP   string    // IPv4 address of the host
 	BrokerPort int       // TCP port of the host
-	Contacts   []Contact `json:"contacts"` // List of trusted contacts
-	Host       host.Host `json:"-"`        // Host is the libp2p host
+	Contacts   []Contact `json:"contacts"`  // List of trusted contacts
+	Directory  string    `json:"directory"` // Directory to be synchronized
+	Host       host.Host `json:"-"`         // Host is the libp2p host
 	// PrvKey and PubKey are used to verify the identity of the Peer
 	PrvKey *rsa.PrivateKey `json:"-"`
 	PubKey *rsa.PublicKey  `json:"-"`
@@ -247,4 +248,18 @@ func (p *Peer) RequestPeer(publicKey string) (*Contact, error) {
 	}
 	c.RSAPubKEy = publicKey
 	return c, nil
+}
+
+// SetDirectory checks if a directory exists/is readable and sets it as
+// Peer.Directory
+func (p *Peer) SetDirectory(directory string) error {
+	f, err := os.Stat(directory)
+	if err != nil {
+		return err
+	}
+	if !f.IsDir() {
+		return fmt.Errorf("'%s' is not a valid directory", directory)
+	}
+	p.Directory = directory
+	return nil
 }

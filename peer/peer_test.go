@@ -141,10 +141,21 @@ func TestPeer_HandleStream(t *testing.T) {
 	c, _ := p.RequestPeer(auth.PrintPubKey(p.PubKey))
 	// add valid peer to peerstore
 	testPeer.Host.Peerstore().AddAddr(c.ID(), c.MultiAddr(), pstore.PermanentAddrTTL)
+
+	// connect to peer
+	// var s net.Stream
+	// var err error
+	// for {
 	s, err := testPeer.ConnectTo(*c)
 	if err != nil {
+		// FIXME: why does this happen?
+		if err.Error() == testErrDialBackOff {
+			t.Log("Dial backoff error")
+		}
 		t.FailNow()
 	}
+	// 	continue
+	// }
 
 	// begin HandleStream test
 	msg := []byte("Hello world!\n")
@@ -180,7 +191,18 @@ func TestPeer_RequestPeer(t *testing.T) {
 func TestPeer_Register(t *testing.T) {
 	err := testPeer.Register()
 	if err != nil {
-		fmt.Println(err)
+		t.FailNow()
+	}
+}
+
+func TestPeer_SetDirectory(t *testing.T) {
+	if err := testPeer.SetDirectory(""); err == nil {
+		t.FailNow()
+	}
+	if err := testPeer.SetDirectory(testDir + filenamePub); err == nil {
+		t.FailNow()
+	}
+	if err := testPeer.SetDirectory(testDir); err != nil {
 		t.FailNow()
 	}
 }

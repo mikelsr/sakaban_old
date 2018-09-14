@@ -7,10 +7,11 @@ import (
 )
 
 const (
-	testBrokerIP   = "127.0.0.1"
-	testBrokerPort = 3080
-	testDir        = "/tmp/peertest"
-	testFailDir    = "/tmp/peertest/fail"
+	testBrokerIP       = "127.0.0.1"
+	testBrokerPort     = 3080
+	testDir            = "/tmp/peertest"
+	testErrDialBackOff = "dial backoff"
+	testFailDir        = "/tmp/peertest/fail"
 )
 
 var (
