@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"bitbucket.org/mikelsr/sakaban/fs"
+	"github.com/satori/go.uuid"
 )
 
 // MessageType is used to identify the message type using one byte
@@ -16,6 +17,92 @@ type Message interface {
 	Dump() []byte
 	Load([]byte) error
 	Type() MessageType
+}
+
+/* Block content */
+
+// BlockContent is used to send a fs.Block and some context, e.g. the file it
+// belongs to
+type BlockContent struct {
+	blockN    uint8     // block number
+	blockSize uint8     // block size in kB
+	content   []byte    // content of the block
+	fileID    uuid.UUID // ID of the file the Block belongs to
+}
+
+// Dump creates a byte array: {MessageType, BlockNumber, BlockSize, FileID,
+// Content} (19B + BlockSize * 1024B)
+func (bc BlockContent) Dump() []byte {
+	return append(append([]byte{byte(bc.Type()), byte(bc.blockN),
+		byte(bc.blockSize)}, bc.fileID.Bytes()...), bc.content...)
+}
+
+// Load reads blockN, blockSize, fileID, content from a byte slice created
+// by br.Dump()
+func (bc *BlockContent) Load(msg []byte) error {
+	if len(msg) < 18 || MessageType(msg[0]) != MTBlockContent {
+		return errors.New("Invalid message type")
+	}
+	blockN := uint8(msg[1])
+	blockSize := uint8(msg[2])
+	fileID, err := uuid.FromBytes(msg[3:22])
+	if err != nil {
+		return err
+	}
+	content := msg[22:]
+
+	if len(content) > int(^uint8(0)) { // bigger than MaxUint8
+		return errors.New("Block size and content length do not match")
+	}
+	if uint8(len(content)) != blockSize {
+		return errors.New("Block size and content length do not match")
+	}
+	bc.blockN = blockN
+	bc.blockSize = blockSize
+	bc.content = content
+	bc.fileID = fileID
+
+	return nil
+}
+
+// Type returns the type of the Message (MTBlockContent)
+func (bc BlockContent) Type() MessageType {
+	return MTBlockContent
+}
+
+/* Block request */
+
+// BlockRequest is used to ask for a block
+type BlockRequest struct {
+	blockN uint8     // block number
+	fileID uuid.UUID // ID of the file the Block belongs to
+}
+
+// Dump creates a byte array: {MessageType, BlockNumber, FileID} (18B)
+func (br BlockRequest) Dump() []byte {
+	return append([]byte{byte(br.Type()), byte(br.blockN)}, br.fileID.Bytes()...)
+}
+
+// Load reads blockN and fileID from a byte slice created by br.Dump()
+func (br *BlockRequest) Load(msg []byte) error {
+	if len(msg) != 18 || MessageType(msg[0]) != MTBlockRequest {
+		return errors.New("Invalid message type")
+	}
+	blockN := uint8(msg[1])
+	fileID, err := uuid.FromBytes(msg[2:])
+	if err != nil {
+		return err
+	}
+
+	// both values extracted successfully
+	br.blockN = blockN
+	br.fileID = fileID
+	return nil
+}
+
+// Type returns the type of the Message (MTBlockRequest)
+func (br BlockRequest) Type() MessageType {
+	return MTBlockRequest
 }
 
 /* Index content */
@@ -35,7 +122,7 @@ func (ic IndexContent) Dump() []byte {
 
 // Load creates a fs.Index given a MTIndexContent message
 func (ic *IndexContent) Load(msg []byte) error {
-	if len(msg) < 2 {
+	if len(msg) < 2 || MessageType(msg[0]) != MTIndexContent {
 		return errors.New("Invalid message type")
 	}
 	return json.Unmarshal(msg[1:], ic)
