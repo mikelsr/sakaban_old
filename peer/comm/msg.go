@@ -45,16 +45,16 @@ func (bc *BlockContent) Load(msg []byte) error {
 	}
 	blockN := uint8(msg[1])
 	blockSize := uint8(msg[2])
-	fileID, err := uuid.FromBytes(msg[3:22])
+	fileID, err := uuid.FromBytes(msg[3:19])
 	if err != nil {
 		return err
 	}
-	content := msg[22:]
+	content := msg[19:]
 
-	if len(content) > int(^uint8(0)) { // bigger than MaxUint8
-		return errors.New("Block size and content length do not match")
+	if len(content) > int(^uint8(0))*1024 { // bigger than MaxUint8
+		return errors.New("Invalid block size")
 	}
-	if uint8(len(content)) != blockSize {
+	if uint8(len(content)/1024) != blockSize {
 		return errors.New("Block size and content length do not match")
 	}
 	bc.blockN = blockN

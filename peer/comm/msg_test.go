@@ -9,7 +9,7 @@ import (
 )
 
 // testBlockContent_Dump checks that the dumped slice has the expected length
-func testBlockContent_Dump(t *testing.T, bc BlockContent) {
+func testBlockContentDump(t *testing.T, bc BlockContent) {
 	if len(bc.Dump()) != 19+len(bc.content) {
 		t.FailNow()
 	}
@@ -17,13 +17,13 @@ func testBlockContent_Dump(t *testing.T, bc BlockContent) {
 
 // testBlockContent_Load loads a BlockContent from a bc.Dump() and compares it
 // to the original (bc)
-func testBlockContent_Load(t *testing.T, bc BlockContent) {
+func testBlockContentLoad(t *testing.T, bc BlockContent) {
 	bcLoaded := new(BlockContent)
 	err := bcLoaded.Load(bc.Dump())
 	if err != nil {
 		log.Fatalln(err)
 	}
-	if reflect.DeepEqual(*bcLoaded, bc) {
+	if !reflect.DeepEqual(*bcLoaded, bc) {
 		t.FailNow()
 	}
 }
@@ -36,8 +36,8 @@ func TestBlockContent(t *testing.T) {
 	id, _ := uuid.NewV4()
 	bc.fileID = id
 
-	testBlockContent_Dump(t, bc)
-	testBlockContent_Load(t, bc)
+	testBlockContentDump(t, bc)
+	testBlockContentLoad(t, bc)
 }
 
 func TestBlockContent_Type(t *testing.T) {
