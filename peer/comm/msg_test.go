@@ -12,7 +12,8 @@ import (
 
 // testBlockContent_Dump checks that the dumped slice has the expected length
 func testBlockContentDump(t *testing.T, bc BlockContent) {
-	if len(bc.Dump()) != 19+len(bc.content) {
+	d := bc.Dump()
+	if len(d) != 19+len(bc.content) || MessageType(d[0]) != MTBlockContent {
 		t.FailNow()
 	}
 }
@@ -70,7 +71,8 @@ func TestBlockContent_Type(t *testing.T) {
 /* Block request */
 
 func testBlockRequestDump(t *testing.T, br BlockRequest) {
-	if len(br.Dump()) != 18 {
+	d := br.Dump()
+	if len(d) != 18 || MessageType(d[0]) != MTBlockRequest {
 		t.FailNow()
 	}
 }
@@ -81,7 +83,7 @@ func testBlockRequestLoad(t *testing.T, br BlockRequest) {
 		t.FailNow()
 	}
 
-	/* error cases */
+	/* error case */
 	if err := br.Load([]byte{}); err == nil {
 		t.FailNow()
 	}
@@ -98,6 +100,58 @@ func TestBlockRequest(t *testing.T) {
 func TestBlockRequest_Type(t *testing.T) {
 	bc := new(BlockRequest)
 	if bc.Type() != MTBlockRequest {
+		t.FailNow()
+	}
+}
+
+/* Index content*/
+
+// TODO: add index lenght to IndexContent
+func testIndexContentDump(t *testing.T, ic IndexContent) {
+
+}
+
+func TestIndexContent_Type(t *testing.T) {
+	ic := new(IndexRequest)
+	if ic.Type() != MTIndexContent {
+		t.FailNow()
+	}
+}
+
+/* Index request */
+
+func testIndexRequestDump(t *testing.T, ir IndexRequest) {
+	d := ir.Dump()
+	if len(d) != 1 || MessageType(d[0]) != MTIndexRequest {
+		t.FailNow()
+	}
+}
+
+func testIndexRequestLoad(t *testing.T, ir IndexRequest) {
+	d := ir.Dump()
+	if err := ir.Load(d); err != nil {
+		t.FailNow()
+	}
+
+	/* error cases */
+	if err := ir.Load([]byte{}); err == nil {
+		t.FailNow()
+	}
+	if err := ir.Load(make([]byte, 2)); err == nil {
+		t.FailNow()
+	}
+}
+
+func TestIndexRequest(t *testing.T) {
+	ir := *new(IndexRequest)
+
+	testIndexRequestDump(t, ir)
+	testIndexRequestLoad(t, ir)
+}
+
+func TestIndexRequest_Type(t *testing.T) {
+	ir := new(IndexRequest)
+	if ir.Type() != MTIndexRequest {
 		t.FailNow()
 	}
 }
