@@ -1,10 +1,13 @@
 package comm
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"reflect"
 	"testing"
 
+	"bitbucket.org/mikelsr/sakaban/fs"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -106,13 +109,47 @@ func TestBlockRequest_Type(t *testing.T) {
 
 /* Index content*/
 
-// TODO: add index lenght to IndexContent
 func testIndexContentDump(t *testing.T, ic IndexContent) {
+	marshalledIndex, _ := json.Marshal(ic.index)
+	if len(ic.Dump()) != len(marshalledIndex)+1 {
+		t.FailNow()
+	}
+}
 
+func testIndexContentLoad(t *testing.T, ic IndexContent) {
+	dump := ic.Dump()
+	if err := ic.Load(dump); err != nil {
+		t.FailNow()
+	}
+
+	/* error cases */
+	if err := ic.Load(dump[1:]); err == nil {
+		t.FailNow()
+	}
+	if err := ic.Load(dump[:len(dump)-1]); err == nil {
+		t.FailNow()
+	}
+}
+
+func TestIndexContent(t *testing.T) {
+	muffinPath := fmt.Sprintf("%s/res/muffin.jpg", fs.ProjectPath())
+	f, err := fs.MakeFile(muffinPath)
+	if err != nil {
+		t.FailNow()
+	}
+	s := fs.MakeSummary(f)
+	index, err := fs.MakeIndex(s)
+	if err != nil {
+		t.FailNow()
+	}
+	ic := IndexContent{index: *index}
+
+	testIndexContentDump(t, ic)
+	testIndexContentLoad(t, ic)
 }
 
 func TestIndexContent_Type(t *testing.T) {
-	ic := new(IndexRequest)
+	ic := new(IndexContent)
 	if ic.Type() != MTIndexContent {
 		t.FailNow()
 	}

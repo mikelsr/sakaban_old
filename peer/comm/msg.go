@@ -116,7 +116,7 @@ type IndexContent struct {
 // The first byte contains the MessageType, the rest of them contained a
 // marshalled fs.Index
 func (ic IndexContent) Dump() []byte {
-	index, _ := json.Marshal(ic)
+	index, _ := json.Marshal(ic.index)
 	return append([]byte{byte(MTIndexContent)}, index...)
 }
 
@@ -125,7 +125,7 @@ func (ic *IndexContent) Load(msg []byte) error {
 	if len(msg) < 2 || MessageType(msg[0]) != MTIndexContent {
 		return errors.New("Invalid message type")
 	}
-	return json.Unmarshal(msg[1:], ic)
+	return json.Unmarshal(msg[1:], &ic.index)
 }
 
 // Type returns the type of the Message (MTIndexContent)
