@@ -11,6 +11,31 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+func TestMessageTypeFromBytes(t *testing.T) {
+	if _, err := MessageTypeFromBytes([]byte{}); err == nil {
+		t.FailNow()
+	}
+	if _, err := MessageTypeFromBytes([]byte{byte(0xFF)}); err == nil {
+		t.FailNow()
+	}
+	bc := BlockContent{}
+	br := BlockRequest{}
+	ic := IndexContent{}
+	ir := IndexRequest{}
+	if mt, err := MessageTypeFromBytes(bc.Dump()); err != nil || *mt != MTBlockContent {
+		t.FailNow()
+	}
+	if mt, err := MessageTypeFromBytes(br.Dump()); err != nil || *mt != MTBlockRequest {
+		t.FailNow()
+	}
+	if mt, err := MessageTypeFromBytes(ic.Dump()); err != nil || *mt != MTIndexContent {
+		t.FailNow()
+	}
+	if mt, err := MessageTypeFromBytes(ir.Dump()); err != nil || *mt != MTIndexRequest {
+		t.FailNow()
+	}
+}
+
 /* Block content */
 
 // testBlockContent_Dump checks that the dumped slice has the expected length

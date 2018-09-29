@@ -19,6 +19,20 @@ type Message interface {
 	Type() MessageType
 }
 
+// MessageTypeFromBytes reads the MessageType from the first element of a
+// byte slice
+func MessageTypeFromBytes(bytes []byte) (*MessageType, error) {
+	if len(bytes) < 1 {
+		return nil, errors.New("Invalid byte slice size")
+	}
+
+	messageType := MessageType(bytes[0])
+	if minMessageType <= messageType && messageType <= maxMessageType {
+		return &messageType, nil
+	}
+	return nil, errors.New("Unknown MessageType")
+}
+
 /* Block content */
 
 // BlockContent is used to send a fs.Block and some context, e.g. the file it

@@ -12,3 +12,6 @@ const (
 	// MTIndexRequest is used to ask for a IndexContent
 	MTIndexRequest
 )
+
+const minMessageType MessageType = MTBlockContent
+const maxMessageType MessageType = MTIndexRequest
