@@ -17,6 +17,7 @@ import (
 
 	"bitbucket.org/mikelsr/sakaban-broker/auth"
 	"bitbucket.org/mikelsr/sakaban-broker/broker"
+	"bitbucket.org/mikelsr/sakaban/peer/comm"
 
 	libp2p "github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-crypto"
@@ -88,7 +89,7 @@ func (p *Peer) Export(dir string) error {
 // HandleStream is the background function responding to incoming connections
 func (p Peer) HandleStream(s net.Stream) {
 	buf := bufio.NewReader(s)
-	recv, err := buf.ReadString('\n')
+	recv, err := buf.ReadBytes(0)
 	if err != nil {
 		panic(err)
 	}
@@ -96,6 +97,22 @@ func (p Peer) HandleStream(s net.Stream) {
 	// log received data
 	prettyID := p.Host.ID().Pretty()
 	log.Printf("[P_%s]\tReceived: %s", prettyID[len(prettyID)-4:], recv)
+
+	messageType, err := comm.MessageTypeFromBytes(recv)
+	if err != nil {
+		// TODO: handle
+		panic(err)
+	}
+	switch *messageType {
+	case comm.MTBlockContent:
+		break
+	case comm.MTBlockRequest:
+		break
+	case comm.MTIndexContent:
+		break
+	case comm.MTIndexRequest:
+		break
+	}
 }
 
 // Import unmarshals a Peer from a directory containing the struct and keys

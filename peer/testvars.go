@@ -18,4 +18,6 @@ var (
 	testBrokerAddr = fmt.Sprintf("http://%s:%d", testBrokerIP, testBrokerPort)
 	testBroker     broker.Broker
 	testPeer       Peer
+	testIntPeer1   Peer // used for integration testing
+	testIntPeer2   Peer // used for integration testing
 )
