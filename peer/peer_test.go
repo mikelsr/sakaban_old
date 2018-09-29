@@ -10,6 +10,7 @@ import (
 
 	"bitbucket.org/mikelsr/sakaban-broker/auth"
 	"bitbucket.org/mikelsr/sakaban-broker/broker"
+	"bitbucket.org/mikelsr/sakaban/peer/comm"
 
 	libp2p "github.com/libp2p/go-libp2p"
 	p2peer "github.com/libp2p/go-libp2p-peer"
@@ -24,6 +25,11 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 	testPeer = *tp
+
+	tip1, _ := NewPeer()
+	tip2, _ := NewPeer()
+	testIntPeer1 = *tip1
+	testIntPeer2 = *tip2
 
 	// create test directories
 	err = os.MkdirAll(testDir, 0755)
@@ -158,7 +164,7 @@ func TestPeer_HandleStream(t *testing.T) {
 	// }
 
 	// begin HandleStream test
-	msg := []byte("Hello world!\n")
+	msg := append(comm.IndexRequest{}.Dump(), byte(0))
 	if n, err := s.Write(msg); n != len(msg) || err != nil {
 		t.FailNow()
 	}
