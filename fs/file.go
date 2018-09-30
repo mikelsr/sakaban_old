@@ -9,9 +9,6 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-// BlockSize defines the size of each block in Bytes
-const BlockSize int64 = 1024 * 1024 // 1024 kB
-
 // File represents a file
 //	ID: unique id of the file
 //	Path: path to the file

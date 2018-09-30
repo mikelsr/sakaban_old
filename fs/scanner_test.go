@@ -10,18 +10,16 @@ import (
 	"time"
 )
 
-// testDir will contain the files generated for this tests
-var testDir string
-
 // TestMain will create and delete the testing directory
 // before and after running tests, respectively
 func TestMain(m *testing.M) {
 	rand.Seed(time.Now().UTC().UnixNano())
-	testDir = filepath.Join(ProjectPath(), "test",
-		fmt.Sprintf("sakaban-test-%d", rand.Intn(1e8)))
+	testDir = "/tmp/fstest"
 	os.MkdirAll(testDir, 0770)
-	defer os.RemoveAll(testDir)
+	os.Mkdir(testFailDir, 0000)
 	m.Run()
+	// cleanup
+	os.RemoveAll(testDir)
 }
 
 func TestMakeScanner(t *testing.T) {
@@ -37,6 +35,7 @@ func TestMakeScanner(t *testing.T) {
 	WriteIndex(*s.NewIndex, filename)
 	s, err = MakeScanner(unitTestDir)
 	if err != nil || len(s.OldIndex.Files) < 1 {
+		fmt.Println(err)
 		t.FailNow()
 	}
 
@@ -48,8 +47,7 @@ func TestMakeScanner(t *testing.T) {
 	}
 
 	// create scanner on non-readable folder
-	os.Chmod(unitTestDir, 0000)
-	_, err = MakeScanner(unitTestDir)
+	_, err = MakeScanner(testFailDir)
 	if err == nil {
 		t.FailNow()
 	}
@@ -60,7 +58,6 @@ func TestMakeScanner(t *testing.T) {
 // It is also used to test Scanner.Visit
 func TestScanner_Scan(t *testing.T) {
 	resFolder := filepath.Join(ProjectPath(), "res")
-	unitTestDir := filepath.Join(testDir, "Scanner_Scan")
 	scanner := new(Scanner)
 	scanner.Scan(resFolder)
 	resFiles, _ := ioutil.ReadDir(resFolder)
@@ -69,8 +66,7 @@ func TestScanner_Scan(t *testing.T) {
 	}
 
 	// scan folder with no read permission
-	os.MkdirAll(unitTestDir, 0000)
-	err := scanner.Scan(unitTestDir)
+	err := scanner.Scan(testFailDir)
 	if err == nil {
 		t.FailNow()
 	}

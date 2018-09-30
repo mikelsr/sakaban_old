@@ -1,14 +1,11 @@
 package fs
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/satori/go.uuid"
 )
-
-var muffinPath = fmt.Sprintf("%s/res/muffin.jpg", ProjectPath())
 
 // TestMakeFile builds File from a valid and an invalid path
 func TestMakeFile(t *testing.T) {

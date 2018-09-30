@@ -5,13 +5,6 @@ import (
 	"path/filepath"
 )
 
-const (
-	// SummaryDir is the relative directory the summary is stored at
-	SummaryDir = ".sakaban"
-	// SummaryFile is the relative name of the file containing the summary
-	SummaryFile = "sakaban.json"
-)
-
 // Scanner will be used to scan a directory and generate File structs
 type Scanner struct {
 	Root string
