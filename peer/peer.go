@@ -17,6 +17,7 @@ import (
 
 	"bitbucket.org/mikelsr/sakaban-broker/auth"
 	"bitbucket.org/mikelsr/sakaban-broker/broker"
+	"bitbucket.org/mikelsr/sakaban/fs"
 	"bitbucket.org/mikelsr/sakaban/peer/comm"
 
 	libp2p "github.com/libp2p/go-libp2p"
@@ -40,7 +41,8 @@ type Peer struct {
 	PubKey *rsa.PublicKey  `json:"-"`
 
 	// fs
-	RootDir string `json:"root_dir"` // Directory to be synchronized
+	RootDir   string   `json:"root_dir"` // Directory to be synchronized
+	RootIndex fs.Index // Index of RootDir
 }
 
 // BrokerAddr returns the formatted address of the broker assigned to the peer
@@ -241,6 +243,13 @@ func (p *Peer) Register() error {
 	}
 	// no errors
 	return nil
+}
+
+// ReloadIndex updates p.RootIndex by scanning p.RootDir
+func (p *Peer) ReloadIndex() {
+	scanner, _ := fs.MakeScanner(p.RootDir)
+	scanner.Scan(scanner.Root)
+	p.RootIndex = *scanner.NewIndex
 }
 
 // RequestPeer obtains info about a peer from a broker given the public key

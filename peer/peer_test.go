@@ -2,17 +2,21 @@ package peer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"bitbucket.org/mikelsr/sakaban-broker/auth"
 	"bitbucket.org/mikelsr/sakaban-broker/broker"
+	"bitbucket.org/mikelsr/sakaban/fs"
 	"bitbucket.org/mikelsr/sakaban/peer/comm"
 
 	libp2p "github.com/libp2p/go-libp2p"
+	net "github.com/libp2p/go-libp2p-net"
 	p2peer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	multiaddr "github.com/multiformats/go-multiaddr"
@@ -132,36 +136,32 @@ func TestPeer_Export(t *testing.T) {
 }
 
 func TestPeer_HandleStream(t *testing.T) {
-	// create valid peer listening in unused addr
-	p, _ := NewPeer()
-	addr, _ := multiaddr.NewMultiaddr("/ip4/0.0.0.0/tcp/3002")
-	options := []libp2p.Option{
-		libp2p.ListenAddrs(addr), // listeing multiaddr
-	}
-	h, _ := libp2p.New(context.Background(), options...)
-	p.Host = h
-	// set stream handler of new peer
-	p.Host.SetStreamHandler(protocolID, p.HandleStream)
-	// register and retrieve peer at test broker
-	p.Register()
-	c, _ := p.RequestPeer(auth.PrintPubKey(p.PubKey))
-	// add valid peer to peerstore
-	testPeer.Host.Peerstore().AddAddr(c.ID(), c.MultiAddr(), pstore.PermanentAddrTTL)
-
-	// connect to peer
-	// var s net.Stream
-	// var err error
-	// for {
-	s, err := testPeer.ConnectTo(*c)
-	if err != nil {
-		// FIXME: why does this happen?
-		if err.Error() == testErrDialBackOff {
-			t.Log("Dial backoff error")
+	err := errors.New("")
+	var s net.Stream
+	for err != nil {
+		// create valid peer listening in unused addr
+		p, _ := NewPeer()
+		addr, _ := multiaddr.NewMultiaddr("/ip4/0.0.0.0/tcp/3002")
+		options := []libp2p.Option{
+			libp2p.ListenAddrs(addr), // listeing multiaddr
 		}
-		t.FailNow()
+		h, _ := libp2p.New(context.Background(), options...)
+		p.Host = h
+		// set stream handler of new peer
+		p.Host.SetStreamHandler(protocolID, p.HandleStream)
+		// register and retrieve peer at test broker
+		p.Register()
+		c, _ := p.RequestPeer(auth.PrintPubKey(p.PubKey))
+		// add valid peer to peerstore
+		testPeer.Host.Peerstore().AddAddr(c.ID(), c.MultiAddr(), pstore.PermanentAddrTTL)
+
+		// connect to peer
+		s, err = testPeer.ConnectTo(*c)
+		// close host to avoid conflict in the next iteration
+		if err != nil {
+			p.Host.Close()
+		}
 	}
-	// 	continue
-	// }
 
 	// begin HandleStream test
 	msg := append(comm.IndexRequest{}.Dump(), byte(0))
@@ -209,6 +209,14 @@ func TestPeer_SetRootDir(t *testing.T) {
 		t.FailNow()
 	}
 	if err := testPeer.SetRootDir(testDir); err != nil {
+		t.FailNow()
+	}
+}
+
+func TestPeer_ReloadPeer(t *testing.T) {
+	testPeer.RootDir = testPeerRootDir
+	testPeer.ReloadIndex()
+	if reflect.DeepEqual(testPeer.RootIndex, fs.Index{}) {
 		t.FailNow()
 	}
 }
