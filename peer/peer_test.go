@@ -201,14 +201,14 @@ func TestPeer_Register(t *testing.T) {
 	}
 }
 
-func TestPeer_SetDirectory(t *testing.T) {
-	if err := testPeer.SetDirectory(""); err == nil {
+func TestPeer_SetRootDir(t *testing.T) {
+	if err := testPeer.SetRootDir(""); err == nil {
 		t.FailNow()
 	}
-	if err := testPeer.SetDirectory(testDir + filenamePub); err == nil {
+	if err := testPeer.SetRootDir(testDir + filenamePub); err == nil {
 		t.FailNow()
 	}
-	if err := testPeer.SetDirectory(testDir); err != nil {
+	if err := testPeer.SetRootDir(testDir); err != nil {
 		t.FailNow()
 	}
 }
