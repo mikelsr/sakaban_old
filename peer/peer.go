@@ -111,7 +111,14 @@ func (p Peer) HandleStream(s net.Stream) {
 	case comm.MTBlockContent:
 		break
 	case comm.MTBlockRequest:
-		break
+		br := comm.BlockRequest{}
+		if err := br.Load(recv[:len(recv)-1]); err != nil {
+			// TODO: handle
+			return
+		}
+		// TODO: use path AND id as identifiers (lookup with path,
+		// compare ids)
+
 	case comm.MTIndexContent:
 		break
 	case comm.MTIndexRequest:

@@ -201,6 +201,14 @@ func TestPeer_Register(t *testing.T) {
 	}
 }
 
+func TestPeer_ReloadPeer(t *testing.T) {
+	testPeer.RootDir = testPeerRootDir
+	testPeer.ReloadIndex()
+	if reflect.DeepEqual(testPeer.RootIndex, fs.Index{}) {
+		t.FailNow()
+	}
+}
+
 func TestPeer_SetRootDir(t *testing.T) {
 	if err := testPeer.SetRootDir(""); err == nil {
 		t.FailNow()
@@ -209,14 +217,6 @@ func TestPeer_SetRootDir(t *testing.T) {
 		t.FailNow()
 	}
 	if err := testPeer.SetRootDir(testDir); err != nil {
-		t.FailNow()
-	}
-}
-
-func TestPeer_ReloadPeer(t *testing.T) {
-	testPeer.RootDir = testPeerRootDir
-	testPeer.ReloadIndex()
-	if reflect.DeepEqual(testPeer.RootIndex, fs.Index{}) {
 		t.FailNow()
 	}
 }

@@ -119,7 +119,7 @@ func testBlockRequestLoad(t *testing.T, br BlockRequest) {
 
 func TestBlockRequest(t *testing.T) {
 	id, _ := uuid.NewV4()
-	br := BlockRequest{blockN: 0, fileID: id}
+	br := BlockRequest{BlockN: 0, FileID: id}
 
 	testBlockRequestDump(t, br)
 	testBlockRequestLoad(t, br)

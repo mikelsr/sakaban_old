@@ -88,13 +88,13 @@ func (bc BlockContent) Type() MessageType {
 
 // BlockRequest is used to ask for a block
 type BlockRequest struct {
-	blockN uint8     // block number
-	fileID uuid.UUID // ID of the file the Block belongs to
+	BlockN uint8     // block number
+	FileID uuid.UUID // ID of the file the Block belongs to
 }
 
 // Dump creates a byte array: {MessageType, BlockNumber, FileID} (18B)
 func (br BlockRequest) Dump() []byte {
-	return append([]byte{byte(br.Type()), byte(br.blockN)}, br.fileID.Bytes()...)
+	return append([]byte{byte(br.Type()), byte(br.BlockN)}, br.FileID.Bytes()...)
 }
 
 // Load reads blockN and fileID from a byte slice created by br.Dump()
@@ -109,8 +109,8 @@ func (br *BlockRequest) Load(msg []byte) error {
 	}
 
 	// both values extracted successfully
-	br.blockN = blockN
-	br.fileID = fileID
+	br.BlockN = blockN
+	br.FileID = fileID
 	return nil
 }
 
