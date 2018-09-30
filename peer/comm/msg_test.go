@@ -1,6 +1,7 @@
 package comm
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -100,7 +101,8 @@ func TestBlockContent_Type(t *testing.T) {
 
 func testBlockRequestDump(t *testing.T, br BlockRequest) {
 	d := br.Dump()
-	if len(d) != 18 || MessageType(d[0]) != MTBlockRequest {
+	br.FilePathSize = uint16(len(br.FilePath))
+	if len(d) != 20+int(br.FilePathSize) || MessageType(d[0]) != MTBlockRequest {
 		t.FailNow()
 	}
 }
@@ -112,6 +114,17 @@ func testBlockRequestLoad(t *testing.T, br BlockRequest) {
 	}
 
 	/* error case */
+	wrongFilePathSize := make([]byte, 2)
+	binary.LittleEndian.PutUint16(wrongFilePathSize, uint16(0))
+	b1 := b[0:18]
+	b2 := b[20 : 20+br.FilePathSize]
+	b = append(b1, wrongFilePathSize...)
+	b = append(b, b2...)
+
+	if err := br.Load(b); err == nil {
+		t.FailNow()
+	}
+
 	if err := br.Load([]byte{}); err == nil {
 		t.FailNow()
 	}
@@ -119,7 +132,7 @@ func testBlockRequestLoad(t *testing.T, br BlockRequest) {
 
 func TestBlockRequest(t *testing.T) {
 	id, _ := uuid.NewV4()
-	br := BlockRequest{BlockN: 0, FileID: id}
+	br := BlockRequest{BlockN: 0, FileID: id, FilePath: "filepath"}
 
 	testBlockRequestDump(t, br)
 	testBlockRequestLoad(t, br)
