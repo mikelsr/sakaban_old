@@ -1,4 +1,4 @@
-package supervisor
+package fs
 
 import (
 	"fmt"
@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	"bitbucket.org/mikelsr/sakaban/fs"
 )
 
 // testDir will contain the files generated for this tests
@@ -19,7 +17,7 @@ var testDir string
 // before and after running tests, respectively
 func TestMain(m *testing.M) {
 	rand.Seed(time.Now().UTC().UnixNano())
-	testDir = filepath.Join(fs.ProjectPath(), "test",
+	testDir = filepath.Join(ProjectPath(), "test",
 		fmt.Sprintf("sakaban-test-%d", rand.Intn(1e8)))
 	os.MkdirAll(testDir, 0770)
 	defer os.RemoveAll(testDir)
@@ -31,12 +29,12 @@ func TestMakeScanner(t *testing.T) {
 	unitTestDir := filepath.Join(testDir, "MakeScanner")
 	os.MkdirAll(filepath.Join(unitTestDir, SummaryDir), 0755)
 	// scanner with no old indexed summary
-	s, err := MakeScanner(filepath.Join(fs.ProjectPath(), "res"))
+	s, err := MakeScanner(filepath.Join(ProjectPath(), "res"))
 	if err != nil {
 		t.FailNow()
 	}
 	// scanner with old indexed summary
-	WriteIndex(s.NewIndex, filename)
+	WriteIndex(*s.NewIndex, filename)
 	s, err = MakeScanner(unitTestDir)
 	if err != nil || len(s.OldIndex.Files) < 1 {
 		t.FailNow()
@@ -61,7 +59,7 @@ func TestMakeScanner(t *testing.T) {
 // compares the number of generated files with the number of files in the dir
 // It is also used to test Scanner.Visit
 func TestScanner_Scan(t *testing.T) {
-	resFolder := filepath.Join(fs.ProjectPath(), "res")
+	resFolder := filepath.Join(ProjectPath(), "res")
 	unitTestDir := filepath.Join(testDir, "Scanner_Scan")
 	scanner := new(Scanner)
 	scanner.Scan(resFolder)

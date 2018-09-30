@@ -1,8 +1,10 @@
 package fs
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 )
 
@@ -117,4 +119,39 @@ func mergeSummaryMap(ignoreCollisions bool, maps ...map[string]*Summary) (map[st
 // ProjectPath returns the directory this project is supposed to be at
 func ProjectPath() string {
 	return fmt.Sprintf("%s/src/bitbucket.org/mikelsr/sakaban", os.Getenv("GOPATH"))
+}
+
+// ReadIndex creates an Index given a path
+// to a file containing a valid json
+func ReadIndex(filename string) (*Index, error) {
+	file, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	var is Index
+	err = json.Unmarshal(file, &is)
+	if err != nil {
+		return nil, err
+	}
+	return &is, nil
+}
+
+// SummaryExists checks wheter the summary file exists
+func SummaryExists(root string) bool {
+	f, err := os.Stat(fmt.Sprintf("%s/%s/%s", root, SummaryDir, SummaryFile))
+	if err != nil {
+		return false
+	}
+	return !f.Mode().IsDir()
+}
+
+// WriteIndex writes an Index as a JSON in
+// the file specified by the path
+func WriteIndex(index Index, filename string) error {
+	content, _ := json.Marshal(index)
+	err := ioutil.WriteFile(filename, content, 0755)
+	if err != nil {
+		return err
+	}
+	return nil
 }
