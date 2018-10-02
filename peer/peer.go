@@ -107,23 +107,7 @@ func (p Peer) HandleStream(s net.Stream) {
 		// TODO: handle
 		panic(err)
 	}
-	switch *messageType {
-	case comm.MTBlockContent:
-		break
-	case comm.MTBlockRequest:
-		br := comm.BlockRequest{}
-		if err := br.Load(recv[:len(recv)-1]); err != nil {
-			// TODO: handle
-			return
-		}
-		// TODO: use path AND id as identifiers (lookup with path,
-		// compare ids)
-
-	case comm.MTIndexContent:
-		break
-	case comm.MTIndexRequest:
-		break
-	}
+	p.handleRequest(s, *messageType, recv)
 }
 
 // Import unmarshals a Peer from a directory containing the struct and keys

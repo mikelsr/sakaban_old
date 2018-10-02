@@ -22,6 +22,51 @@ import (
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
+func createTestPeers() (Peer, Peer) {
+	p1, _ := NewPeer()
+	p2, _ := NewPeer()
+
+	addr, _ := multiaddr.NewMultiaddr(testListenMultiAddr1)
+	options := []libp2p.Option{
+		libp2p.ListenAddrs(addr), // listeing multiaddr
+	}
+	h, _ := libp2p.New(context.Background(), options...)
+	p1.Host = h
+	p1.Host.SetStreamHandler(protocolID, p1.HandleStream)
+
+	addr, _ = multiaddr.NewMultiaddr(testListenMultiAddr2)
+	options = []libp2p.Option{
+		libp2p.ListenAddrs(addr), // listeing multiaddr
+	}
+	h, _ = libp2p.New(context.Background(), options...)
+	p2.Host = h
+	p2.Host.SetStreamHandler(protocolID, p2.HandleStream)
+
+	c1 := Contact{
+		Addr:      testListenMultiAddr1,
+		PeerID:    p1.Host.ID().Pretty(),
+		RSAPubKEy: auth.PrintPubKey(p1.PubKey),
+	}
+	c2 := Contact{
+		Addr:      testListenMultiAddr2,
+		PeerID:    p2.Host.ID().Pretty(),
+		RSAPubKEy: auth.PrintPubKey(p2.PubKey),
+	}
+	p1.Contacts = append(p1.Contacts, c2)
+	p2.Contacts = append(p1.Contacts, c1)
+
+	p1.Host.Peerstore().AddAddr(c2.ID(), c2.MultiAddr(), pstore.PermanentAddrTTL)
+	p2.Host.Peerstore().AddAddr(c1.ID(), c1.MultiAddr(), pstore.PermanentAddrTTL)
+
+	p1.SetRootDir(testPeerRootDir)
+	p2.SetRootDir(testPeerRootDir)
+	p1.ReloadIndex()
+
+	p1.Register()
+	p2.Register()
+	return *p1, *p2
+}
+
 func TestMain(m *testing.M) {
 	// create test peer with key pair
 	tp, err := NewPeer()
@@ -29,11 +74,6 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 	testPeer = *tp
-
-	tip1, _ := NewPeer()
-	tip2, _ := NewPeer()
-	testIntPeer1 = *tip1
-	testIntPeer2 = *tip2
 
 	// create test directories
 	err = os.MkdirAll(testDir, 0755)
@@ -50,6 +90,8 @@ func TestMain(m *testing.M) {
 	// create and run test broker
 	testBroker = *broker.NewBroker()
 	go testBroker.ListenAndServe(testBrokerIP, testBrokerPort)
+	testIntPeer1, testIntPeer2 = createTestPeers()
+
 	// run tests
 	m.Run()
 	// cleanup
@@ -92,7 +134,7 @@ func TestPeer_ConnectTo(t *testing.T) {
 
 	// create valid peer listening in unused addr
 	p, _ = NewPeer()
-	addr, _ := multiaddr.NewMultiaddr("/ip4/0.0.0.0/tcp/3002")
+	addr, _ := multiaddr.NewMultiaddr(testListenMultiAddr3)
 	options := []libp2p.Option{
 		libp2p.ListenAddrs(addr), // listeing multiaddr
 	}
@@ -141,7 +183,7 @@ func TestPeer_HandleStream(t *testing.T) {
 	for err != nil {
 		// create valid peer listening in unused addr
 		p, _ := NewPeer()
-		addr, _ := multiaddr.NewMultiaddr("/ip4/0.0.0.0/tcp/3002")
+		addr, _ := multiaddr.NewMultiaddr(testListenMultiAddr3)
 		options := []libp2p.Option{
 			libp2p.ListenAddrs(addr), // listeing multiaddr
 		}
