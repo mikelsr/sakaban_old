@@ -42,7 +42,7 @@ func TestMessageTypeFromBytes(t *testing.T) {
 // testBlockContent_Dump checks that the dumped slice has the expected length
 func testBlockContentDump(t *testing.T, bc BlockContent) {
 	d := bc.Dump()
-	if len(d) != 19+len(bc.content) || MessageType(d[0]) != MTBlockContent {
+	if len(d) != 20+len(bc.Content) || MessageType(d[0]) != MTBlockContent {
 		t.FailNow()
 	}
 }
@@ -67,12 +67,12 @@ func testBlockContentLoad(t *testing.T, bc BlockContent) {
 		t.FailNow()
 	}
 	// Invalid block size
-	bc.content = make([]byte, int(^uint8(0))*1024+1)
+	bc.Content = make([]byte, int(^uint16(0))*1024+1)
 	if err = bc.Load(bc.Dump()); err == nil {
 		t.FailNow()
 	}
 	// Mismatched block size
-	bc.content = []byte{0}
+	bc.Content = []byte{0}
 	if err = bc.Load(bc.Dump()); err == nil {
 		t.FailNow()
 	}
@@ -80,11 +80,11 @@ func testBlockContentLoad(t *testing.T, bc BlockContent) {
 
 func TestBlockContent(t *testing.T) {
 	bc := *new(BlockContent)
-	bc.blockN = 1
-	bc.blockSize = 1
-	bc.content = make([]byte, 1024)
+	bc.BlockN = 1
+	bc.BlockSize = 1
+	bc.Content = make([]byte, 1024)
 	id, _ := uuid.NewV4()
-	bc.fileID = id
+	bc.FileID = id
 
 	testBlockContentDump(t, bc)
 	testBlockContentLoad(t, bc)

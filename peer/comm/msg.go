@@ -1,7 +1,6 @@
 package comm
 
 import (
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 
@@ -39,43 +38,44 @@ func MessageTypeFromBytes(bytes []byte) (*MessageType, error) {
 // BlockContent is used to send a fs.Block and some context, e.g. the file it
 // belongs to
 type BlockContent struct {
-	blockN    uint8     // block number
-	blockSize uint8     // block size in kB
-	content   []byte    // content of the block
-	fileID    uuid.UUID // ID of the file the Block belongs to
+	BlockN    uint8     // block number
+	BlockSize uint16    // block size in kB
+	Content   []byte    // content of the block
+	FileID    uuid.UUID // ID of the file the Block belongs to
 }
 
 // Dump creates a byte array: {MessageType, BlockNumber, BlockSize, FileID,
 // Content} (19B + BlockSize * 1024B)
 func (bc BlockContent) Dump() []byte {
-	return append(append([]byte{byte(bc.Type()), byte(bc.blockN),
-		byte(bc.blockSize)}, bc.fileID.Bytes()...), bc.content...)
+	dump := append([]byte{byte(bc.Type()), byte(bc.BlockN)}, uint16ToBytes(bc.BlockSize)...)
+	dump = append(dump, bc.FileID.Bytes()...)
+	return append(dump, bc.Content...)
 }
 
 // Load reads blockN, blockSize, fileID, content from a byte slice created
 // by br.Dump()
 func (bc *BlockContent) Load(msg []byte) error {
-	if len(msg) < 18 || MessageType(msg[0]) != MTBlockContent {
+	if len(msg) < 20 || MessageType(msg[0]) != MTBlockContent {
 		return errors.New("Invalid message type")
 	}
 	blockN := uint8(msg[1])
-	blockSize := uint8(msg[2])
-	fileID, err := uuid.FromBytes(msg[3:19])
+	blockSize := uint16FromBytes(msg[2:4])
+	fileID, err := uuid.FromBytes(msg[4:20])
 	if err != nil {
 		return err
 	}
-	content := msg[19:]
+	content := msg[20:]
 
-	if len(content) > int(^uint8(0))*1024 { // bigger than MaxUint8
+	if len(content) > int(^uint16(0))*1024 { // bigger than MaxUint8
 		return errors.New("Invalid block size")
 	}
-	if uint8(len(content)/1024) != blockSize {
+	if uint16(len(content)/1024) != blockSize {
 		return errors.New("Block size and content length do not match")
 	}
-	bc.blockN = blockN
-	bc.blockSize = blockSize
-	bc.content = content
-	bc.fileID = fileID
+	bc.BlockN = blockN
+	bc.BlockSize = blockSize
+	bc.Content = content
+	bc.FileID = fileID
 
 	return nil
 }
@@ -100,8 +100,7 @@ func (br BlockRequest) Dump() []byte {
 	dump := append([]byte{byte(br.Type()), byte(br.BlockN)}, br.FileID.Bytes()...)
 	encodedPath := []byte(br.FilePath)
 	// split string size in two bytes
-	pathSize := make([]byte, 2)
-	binary.LittleEndian.PutUint16(pathSize, uint16(len(encodedPath)))
+	pathSize := uint16ToBytes(uint16(len(encodedPath)))
 	dump = append(dump, pathSize...)
 	return append(dump, encodedPath...)
 }
@@ -117,7 +116,7 @@ func (br *BlockRequest) Load(msg []byte) error {
 		return err
 	}
 
-	filePathSize := int(binary.LittleEndian.Uint16(msg[18:20]))
+	filePathSize := int(uint16FromBytes(msg[18:20]))
 	if len(msg) != 20+filePathSize {
 		return errors.New("Incomplete message content")
 	}
