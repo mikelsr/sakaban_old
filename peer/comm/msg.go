@@ -107,7 +107,7 @@ func (br BlockRequest) Dump() []byte {
 
 // Load reads blockN and fileID from a byte slice created by br.Dump()
 func (br *BlockRequest) Load(msg []byte) error {
-	if len(msg) < 22 || MessageType(msg[0]) != MTBlockRequest {
+	if len(msg) < 20 || MessageType(msg[0]) != MTBlockRequest {
 		return errors.New("Invalid message type")
 	}
 	blockN := uint8(msg[1])
