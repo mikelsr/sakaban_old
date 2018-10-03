@@ -1,7 +1,6 @@
 package peer
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -10,7 +9,7 @@ import (
 )
 
 func TestPeer_HandleRequestMTBlockRequest(t *testing.T) {
-	s, err := testIntPeer1.ConnectTo(testIntPeer1.Contacts[0 /* testIntPeer2 */])
+	s, err := testIntPeer2.ConnectTo(testIntPeer2.Contacts[0 /* testIntPeer1 */])
 	if err != nil {
 		t.FailNow()
 	}
@@ -19,21 +18,21 @@ func TestPeer_HandleRequestMTBlockRequest(t *testing.T) {
 		t.FailNow()
 	}
 	absPath := summary.Path
-	relPath := strings.Replace(absPath, testIntPeer1.RootDir, "", 1)
-	id, _ := uuid.FromBytes([]byte(summary.ID))
+	relPath := strings.Replace(absPath, testIntPeer2.RootDir+"/", "", 1)
+	id, _ := uuid.FromString(summary.ID)
 
 	br := comm.BlockRequest{
-		BlockN:   0,
+		BlockN:   1,
 		FileID:   id,
 		FilePath: relPath,
 	}
-	payload := br.Dump()
-	if n, err := s.Write(payload); err != nil || n != len(payload) {
+	payload := append(br.Dump(), 0xFF)
+	n, err := s.Write(payload)
+	if err != nil || n != len(payload) {
 		t.FailNow()
 	}
 	response := make([]byte, 1024*1024*2)
-	n, err := s.Read(response)
-	fmt.Println(n)
+	_, err = s.Read(response)
 	if err != nil {
 		t.FailNow()
 	}

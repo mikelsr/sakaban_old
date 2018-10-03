@@ -20,8 +20,8 @@ var (
 	testBroker           broker.Broker
 	testDir              = fmt.Sprintf("/tmp/sakaban-test-%d", rand.Intn(1e8))
 	testFailDir          = testDir + "/fail"
-	testIntPeer1         Peer // used for integration testing
-	testIntPeer2         Peer // used for integration testing
+	testIntPeer1         *Peer // used for integration testing
+	testIntPeer2         *Peer // used for integration testing
 	testPeer             Peer
 	testPeerRootDir      = fmt.Sprintf("%s/res", fs.ProjectPath())
 	testListenMultiAddr1 = "/ip4/0.0.0.0/tcp/3011"

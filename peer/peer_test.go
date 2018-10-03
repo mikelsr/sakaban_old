@@ -3,7 +3,6 @@ package peer
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -22,7 +21,7 @@ import (
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
-func createTestPeers() (Peer, Peer) {
+func createTestPeers() (*Peer, *Peer) {
 	p1, _ := NewPeer()
 	p2, _ := NewPeer()
 
@@ -52,19 +51,19 @@ func createTestPeers() (Peer, Peer) {
 		PeerID:    p2.Host.ID().Pretty(),
 		RSAPubKEy: auth.PrintPubKey(p2.PubKey),
 	}
-	p1.Contacts = append(p1.Contacts, c2)
-	p2.Contacts = append(p1.Contacts, c1)
+	p1.Contacts = []Contact{c2}
+	p2.Contacts = []Contact{c1}
 
 	p1.Host.Peerstore().AddAddr(c2.ID(), c2.MultiAddr(), pstore.PermanentAddrTTL)
 	p2.Host.Peerstore().AddAddr(c1.ID(), c1.MultiAddr(), pstore.PermanentAddrTTL)
 
-	p1.SetRootDir(testPeerRootDir)
-	p2.SetRootDir(testPeerRootDir)
+	p1.RootDir = testPeerRootDir
+	p2.RootDir = testPeerRootDir
 	p1.ReloadIndex()
 
 	p1.Register()
 	p2.Register()
-	return *p1, *p2
+	return p1, p2
 }
 
 func TestMain(m *testing.M) {
@@ -111,7 +110,6 @@ func TestImport(t *testing.T) {
 	// correct import
 	_, err = Import(dir)
 	if err != nil {
-		fmt.Println(err)
 		t.FailNow()
 	}
 }
