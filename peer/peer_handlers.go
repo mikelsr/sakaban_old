@@ -51,9 +51,40 @@ func (p *Peer) handleRequestMTBlockRequest(s net.Stream, br comm.BlockRequest) e
 		FileID:    f.ID,
 	}
 	raw := bc.Dump()
-	log.Printf("[P_%s]\tSending file: %s", prettyID, absPath)
+	log.Printf("[P_%s]\tSending block %d of file: %s", prettyID, bc.BlockN, absPath)
 	if n, err := s.Write(raw); n != len(raw) || err != nil {
 		return errors.New("Error writing to steam")
 	}
 	return nil
+}
+
+/* helper functions */
+
+// recvBlockContent reads all the content of a comm.BlockContent, even if it's
+// splitted
+func recvBlockContent(s net.Stream) (*comm.BlockContent, error) {
+	buf := make([]byte, bufferSize)
+	n, err := s.Read(buf)
+	if err != nil {
+		return nil, err
+	}
+	buf = buf[:n]
+
+	bc := comm.BlockContent{}
+	bc.Load(buf)
+
+	for uint64(len(buf)) < bc.MessageSize {
+		recv := make([]byte, bufferSize)
+		n, err = s.Read(recv)
+		if err != nil {
+			return nil, err
+		}
+		recv = recv[:n]
+		buf = append(buf, recv...)
+	}
+
+	if err = bc.Load(buf); err != nil {
+		return nil, err
+	}
+	return &bc, nil
 }
