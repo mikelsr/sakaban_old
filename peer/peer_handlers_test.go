@@ -47,6 +47,7 @@ func TestPeer_HandleRequestMTBlockRequest(t *testing.T) {
 	bc := comm.BlockContent{}
 	bc.Load(recv)
 
+	// TODO: create a function for this
 	for uint64(len(buff)) < bc.MessageSize {
 		r := make([]byte, 1024*1024*2)
 		n, err = s.Read(r)

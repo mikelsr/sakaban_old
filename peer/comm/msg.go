@@ -46,12 +46,15 @@ type BlockContent struct {
 }
 
 // Dump creates a byte array: {MessageType, BlockNumber, BlockSize, FileID,
-// Content} (19B + BlockSize * 1024B)
+// Content} (28B + BlockSize * 1024B)
 func (bc BlockContent) Dump() []byte {
+	// create base message
 	dump := append([]byte{byte(bc.Type()), byte(bc.BlockN)}, uint16ToBytes(bc.BlockSize)...)
 	dump = append(dump, bc.FileID.Bytes()...)
 	dump = append(dump, bc.Content...)
+	// calculate size of message
 	totalLen := uint64(len(dump) + 8)
+	// create new massage merging the base message and its size
 	cDump := []byte{dump[0]}
 	cDump = append(cDump, uint64ToBytes(totalLen)...)
 	cDump = append(cDump, dump[1:]...)
@@ -61,6 +64,7 @@ func (bc BlockContent) Dump() []byte {
 // Load reads blockN, blockSize, fileID, content from a byte slice created
 // by br.Dump()
 func (bc *BlockContent) Load(msg []byte) error {
+	// parse contents of the message, extract values
 	if len(msg) < 28 || MessageType(msg[0]) != MTBlockContent {
 		return errors.New("Invalid message type")
 	}
@@ -73,6 +77,7 @@ func (bc *BlockContent) Load(msg []byte) error {
 	}
 	content := msg[28:]
 
+	// validate extracted values
 	if len(content) > int(^uint16(0))*1024 { // bigger than MaxUint8
 		return errors.New("Invalid block size")
 	}
@@ -80,6 +85,8 @@ func (bc *BlockContent) Load(msg []byte) error {
 	if uint16(len(content)/1024) > blockSize {
 		return errors.New("Content lenght is greater than block size")
 	}
+
+	// assign extracted values
 	bc.MessageSize = totalSize
 	bc.BlockN = blockN
 	bc.BlockSize = blockSize
