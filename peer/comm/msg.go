@@ -38,10 +38,11 @@ func MessageTypeFromBytes(bytes []byte) (*MessageType, error) {
 // BlockContent is used to send a fs.Block and some context, e.g. the file it
 // belongs to
 type BlockContent struct {
-	BlockN    uint8     // block number
-	BlockSize uint16    // block size in kB
-	Content   []byte    // content of the block
-	FileID    uuid.UUID // ID of the file the Block belongs to
+	MessageSize uint64    // total size of the message
+	BlockN      uint8     // block number
+	BlockSize   uint16    // block size in kB
+	Content     []byte    // content of the block
+	FileID      uuid.UUID // ID of the file the Block belongs to
 }
 
 // Dump creates a byte array: {MessageType, BlockNumber, BlockSize, FileID,
@@ -49,29 +50,37 @@ type BlockContent struct {
 func (bc BlockContent) Dump() []byte {
 	dump := append([]byte{byte(bc.Type()), byte(bc.BlockN)}, uint16ToBytes(bc.BlockSize)...)
 	dump = append(dump, bc.FileID.Bytes()...)
-	return append(dump, bc.Content...)
+	dump = append(dump, bc.Content...)
+	totalLen := uint64(len(dump) + 8)
+	cDump := []byte{dump[0]}
+	cDump = append(cDump, uint64ToBytes(totalLen)...)
+	cDump = append(cDump, dump[1:]...)
+	return cDump
 }
 
 // Load reads blockN, blockSize, fileID, content from a byte slice created
 // by br.Dump()
 func (bc *BlockContent) Load(msg []byte) error {
-	if len(msg) < 20 || MessageType(msg[0]) != MTBlockContent {
+	if len(msg) < 28 || MessageType(msg[0]) != MTBlockContent {
 		return errors.New("Invalid message type")
 	}
-	blockN := uint8(msg[1])
-	blockSize := uint16FromBytes(msg[2:4])
-	fileID, err := uuid.FromBytes(msg[4:20])
+	totalSize := uint64FromBytes(msg[1:9])
+	blockN := uint8(msg[9])
+	blockSize := uint16FromBytes(msg[10:12])
+	fileID, err := uuid.FromBytes(msg[12:28])
 	if err != nil {
 		return err
 	}
-	content := msg[20:]
+	content := msg[28:]
 
 	if len(content) > int(^uint16(0))*1024 { // bigger than MaxUint8
 		return errors.New("Invalid block size")
 	}
-	if uint16(len(content)/1024) != blockSize {
-		return errors.New("Block size and content length do not match")
+
+	if uint16(len(content)/1024) > blockSize {
+		return errors.New("Content lenght is greater than block size")
 	}
+	bc.MessageSize = totalSize
 	bc.BlockN = blockN
 	bc.BlockSize = blockSize
 	bc.Content = content
