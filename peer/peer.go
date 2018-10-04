@@ -93,11 +93,12 @@ func (p *Peer) Export(dir string) error {
 // HandleStream is the background function responding to incoming connections
 func (p *Peer) HandleStream(s net.Stream) {
 	buf := bufio.NewReader(s)
-	recv, err := buf.ReadBytes(0xFF)
+	recv := make([]byte, 1024*1024*2)
+	n, err := buf.Read(recv)
 	if err != nil {
 		panic(err)
 	}
-	recv = recv[:len(recv)-1]
+	recv = recv[:n]
 
 	// log received data
 	prettyID := p.Host.ID().Pretty()
