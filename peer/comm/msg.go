@@ -27,6 +27,8 @@ type LongMessage interface {
 	Recv(s net.Stream) ([]byte, error)
 }
 
+/* Generic functions */
+
 // MessageTypeFromBytes reads the MessageType from the first element of a
 // byte slice
 func MessageTypeFromBytes(bytes []byte) (*MessageType, error) {
@@ -41,9 +43,7 @@ func MessageTypeFromBytes(bytes []byte) (*MessageType, error) {
 	return nil, errors.New("Unknown MessageType")
 }
 
-/* Generic functions */
-
-/* recvLongMessage reads all the content of a LongMessage from a net.String */
+// recvLongMessage reads all the content of a LongMessage from a net.String
 func recvLongMessage(s net.Stream, lm LongMessage) ([]byte, error) {
 	buf := make([]byte, bufferSize)
 	// receive initial bytes

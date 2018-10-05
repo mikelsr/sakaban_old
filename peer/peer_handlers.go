@@ -23,7 +23,11 @@ func (p *Peer) handleRequest(s net.Stream, msgType comm.MessageType, msg []byte)
 	case comm.MTIndexContent:
 		break
 	case comm.MTIndexRequest:
-		break
+		ir := comm.IndexRequest{}
+		if err := ir.Load(msg); err != nil {
+			return errors.New("Error unmarshalling IndexRequest")
+		}
+		return p.handleRequestMTIndexRequest(s, ir)
 	}
 	return nil
 }
@@ -52,6 +56,16 @@ func (p *Peer) handleRequestMTBlockRequest(s net.Stream, br comm.BlockRequest) e
 	}
 	raw := bc.Dump()
 	log.Printf("[P_%s]\tSending block %d of file: %s", prettyID, bc.BlockN, absPath)
+	if n, err := s.Write(raw); n != len(raw) || err != nil {
+		return errors.New("Error writing to steam")
+	}
+	return nil
+}
+
+func (p *Peer) handleRequestMTIndexRequest(s net.Stream, ir comm.IndexRequest) error {
+	// TODO: ReloadIndex as a background routine
+	ic := comm.IndexContent{Index: p.RootIndex}
+	raw := ic.Dump()
 	if n, err := s.Write(raw); n != len(raw) || err != nil {
 		return errors.New("Error writing to steam")
 	}
