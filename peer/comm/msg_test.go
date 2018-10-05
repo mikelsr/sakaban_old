@@ -149,8 +149,8 @@ func TestBlockRequest_Type(t *testing.T) {
 /* Index content*/
 
 func testIndexContentDump(t *testing.T, ic IndexContent) {
-	marshalledIndex, _ := json.Marshal(ic.index)
-	if len(ic.Dump()) != len(marshalledIndex)+1 {
+	marshalledIndex, _ := json.Marshal(ic.Index)
+	if len(ic.Dump()) != len(marshalledIndex)+9 {
 		t.FailNow()
 	}
 }
@@ -181,7 +181,7 @@ func TestIndexContent(t *testing.T) {
 	if err != nil {
 		t.FailNow()
 	}
-	ic := IndexContent{index: *index}
+	ic := IndexContent{Index: *index}
 
 	testIndexContentDump(t, ic)
 	testIndexContentLoad(t, ic)

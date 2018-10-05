@@ -155,23 +155,31 @@ func (br BlockRequest) Type() MessageType {
 
 // IndexContent is used to send the fs.Index of a directory to a peer
 type IndexContent struct {
-	index fs.Index
+	MessageSize uint64 // total size of the message
+	Index       fs.Index
 }
 
 // Dump creates a byte array used to recreate (Load) the message
 // The first byte contains the MessageType, the rest of them contained a
 // marshalled fs.Index
 func (ic IndexContent) Dump() []byte {
-	index, _ := json.Marshal(ic.index)
-	return append([]byte{byte(MTIndexContent)}, index...)
+	index, _ := json.Marshal(ic.Index)
+	dump := append([]byte{byte(MTIndexContent)}, uint64ToBytes(uint64(len(index)+1))...)
+	return append(dump, index...)
 }
 
 // Load creates a fs.Index given a MTIndexContent message
 func (ic *IndexContent) Load(msg []byte) error {
-	if len(msg) < 2 || MessageType(msg[0]) != MTIndexContent {
+	if len(msg) < 9 || MessageType(msg[0]) != MTIndexContent {
 		return errors.New("Invalid message type")
 	}
-	return json.Unmarshal(msg[1:], &ic.index)
+	totalSize := uint64FromBytes(msg[1:9])
+	if err := json.Unmarshal(msg[9:], &ic.Index); err != nil {
+		return err
+	}
+
+	ic.MessageSize = totalSize
+	return nil
 }
 
 // Type returns the type of the Message (MTIndexContent)

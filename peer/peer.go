@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -102,7 +103,7 @@ func (p *Peer) HandleStream(s net.Stream) {
 
 	// log received data
 	prettyID := p.Host.ID().Pretty()
-	log.Printf("[P_%s]\tReceived: %s", prettyID[len(prettyID)-4:], recv)
+	log.Printf("[P_%s]\tReceived: %s", prettyID[len(prettyID)-4:], hex.EncodeToString(recv))
 
 	messageType, err := comm.MessageTypeFromBytes(recv)
 	if err != nil {
