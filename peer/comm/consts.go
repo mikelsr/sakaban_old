@@ -15,3 +15,8 @@ const (
 
 const minMessageType MessageType = MTBlockContent
 const maxMessageType MessageType = MTIndexRequest
+
+const (
+	/* other constats */
+	bufferSize = 1024 * 1024 * 2 // recv buffer size
+)

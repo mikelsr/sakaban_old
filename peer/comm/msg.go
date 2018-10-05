@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"bitbucket.org/mikelsr/sakaban/fs"
+	net "github.com/libp2p/go-libp2p-net"
 	"github.com/satori/go.uuid"
 )
 
@@ -20,8 +21,10 @@ type Message interface {
 	Type() MessageType
 }
 
+// LongMessage has the necessary information to receive a full, long message
 type LongMessage interface {
 	Size([]byte) uint64
+	Recv(s net.Stream) ([]byte, error)
 }
 
 // MessageTypeFromBytes reads the MessageType from the first element of a
@@ -36,6 +39,34 @@ func MessageTypeFromBytes(bytes []byte) (*MessageType, error) {
 		return &messageType, nil
 	}
 	return nil, errors.New("Unknown MessageType")
+}
+
+/* Generic functions */
+
+/* recvLongMessage reads all the content of a LongMessage from a net.String */
+func recvLongMessage(s net.Stream, lm LongMessage) ([]byte, error) {
+	buf := make([]byte, bufferSize)
+	// receive initial bytes
+	n, err := s.Read(buf)
+	if err != nil {
+		return nil, err
+	}
+	// trim received data
+	buf = buf[:n]
+	// extract total size of the message
+	msgSize := lm.Size(buf)
+
+	// receive complete message
+	for uint64(len(buf)) < msgSize {
+		recv := make([]byte, bufferSize)
+		n, err := s.Read(recv)
+		if err != nil {
+			return nil, err
+		}
+		recv = recv[:n]
+		buf = append(buf, recv...)
+	}
+	return buf, nil
 }
 
 /* Block content */
@@ -103,6 +134,11 @@ func (bc *BlockContent) Load(msg []byte) error {
 	bc.FileID = fileID
 
 	return nil
+}
+
+// Recv calls recvLongMessage to receive a complete BlockContent
+func (bc BlockContent) Recv(s net.Stream) ([]byte, error) {
+	return recvLongMessage(s, bc)
 }
 
 // Size returns the total size of the message, represented in the bytes 1 to 9
@@ -197,6 +233,11 @@ func (ic *IndexContent) Load(msg []byte) error {
 
 	ic.MessageSize = totalSize
 	return nil
+}
+
+// Recv calls recvLongMessage to receive a complete IndexContent
+func (ic IndexContent) Recv(s net.Stream) ([]byte, error) {
+	return recvLongMessage(s, ic)
 }
 
 // Size returns the total size of the message, represented in the bytes 1 to 9

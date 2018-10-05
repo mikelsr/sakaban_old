@@ -3,7 +3,6 @@ package peer
 const (
 	brokerIP        = "127.0.0.1"
 	brokerPort      = 3080
-	bufferSize      = 1024 * 1024 * 2 // recv buffer size
 	filenamePeer    = "peer.json"
 	filenamePrv     = "prvkey.pem"
 	filenamePub     = "pubkey.pem"

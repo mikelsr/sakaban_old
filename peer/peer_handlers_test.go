@@ -2,7 +2,6 @@ package peer
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -36,9 +35,12 @@ func TestPeer_HandleRequestMTBlockRequest(t *testing.T) {
 		t.FailNow()
 	}
 
-	bc, err := recvBlockContent(s)
+	bc := comm.BlockContent{}
+	msg, err := bc.Recv(s)
 	if err != nil {
-		fmt.Println(err)
+		t.FailNow()
+	}
+	if err = bc.Load(msg); err != nil {
 		t.FailNow()
 	}
 
