@@ -71,7 +71,7 @@ func recvBlockContent(s net.Stream) (*comm.BlockContent, error) {
 	buf = buf[:n]
 
 	bc := comm.BlockContent{}
-	bc.Load(buf)
+	bc.MessageSize = bc.Size(buf)
 
 	for uint64(len(buf)) < bc.MessageSize {
 		recv := make([]byte, bufferSize)
