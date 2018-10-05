@@ -3,6 +3,7 @@ package comm
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"bitbucket.org/mikelsr/sakaban/fs"
 	"github.com/satori/go.uuid"
@@ -17,6 +18,10 @@ type Message interface {
 	Dump() []byte
 	Load([]byte) error
 	Type() MessageType
+}
+
+type LongMessage interface {
+	Size([]byte) uint64
 }
 
 // MessageTypeFromBytes reads the MessageType from the first element of a
@@ -68,7 +73,11 @@ func (bc *BlockContent) Load(msg []byte) error {
 	if len(msg) < 28 || MessageType(msg[0]) != MTBlockContent {
 		return errors.New("Invalid message type")
 	}
-	totalSize := uint64FromBytes(msg[1:9])
+	totalSize := bc.Size(msg)
+	if uint64(len(msg)) != totalSize {
+		return fmt.Errorf("Invalid BlockContent dump, expected %dB got %dB", totalSize, len(msg))
+	}
+
 	blockN := uint8(msg[9])
 	blockSize := uint16FromBytes(msg[10:12])
 	fileID, err := uuid.FromBytes(msg[12:28])
@@ -94,6 +103,11 @@ func (bc *BlockContent) Load(msg []byte) error {
 	bc.FileID = fileID
 
 	return nil
+}
+
+// Size returns the total size of the message, represented in the bytes 1 to 9
+func (bc BlockContent) Size(msg []byte) uint64 {
+	return uint64FromBytes(msg[1:9])
 }
 
 // Type returns the type of the Message (MTBlockContent)
@@ -164,7 +178,7 @@ type IndexContent struct {
 // marshalled fs.Index
 func (ic IndexContent) Dump() []byte {
 	index, _ := json.Marshal(ic.Index)
-	dump := append([]byte{byte(MTIndexContent)}, uint64ToBytes(uint64(len(index)+1))...)
+	dump := append([]byte{byte(MTIndexContent)}, uint64ToBytes(uint64(len(index)+9))...)
 	return append(dump, index...)
 }
 
@@ -173,13 +187,21 @@ func (ic *IndexContent) Load(msg []byte) error {
 	if len(msg) < 9 || MessageType(msg[0]) != MTIndexContent {
 		return errors.New("Invalid message type")
 	}
-	totalSize := uint64FromBytes(msg[1:9])
+	totalSize := ic.Size(msg)
+	if uint64(len(msg)) != totalSize {
+		return fmt.Errorf("Invalid BlockContent dump, expected %dB got %dB", totalSize, len(msg))
+	}
 	if err := json.Unmarshal(msg[9:], &ic.Index); err != nil {
 		return err
 	}
 
 	ic.MessageSize = totalSize
 	return nil
+}
+
+// Size returns the total size of the message, represented in the bytes 1 to 9
+func (ic IndexContent) Size(msg []byte) uint64 {
+	return uint64FromBytes(msg[1:9])
 }
 
 // Type returns the type of the Message (MTIndexContent)
