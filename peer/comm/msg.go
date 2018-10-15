@@ -44,6 +44,7 @@ func MessageTypeFromBytes(bytes []byte) (*MessageType, error) {
 }
 
 // recvLongMessage reads all the content of a LongMessage from a net.String
+// UNTESTED
 func recvLongMessage(s net.Stream, lm LongMessage) ([]byte, error) {
 	buf := make([]byte, bufferSize)
 	// receive initial bytes

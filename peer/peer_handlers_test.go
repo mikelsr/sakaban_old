@@ -49,3 +49,27 @@ func TestPeer_HandleRequestMTBlockRequest(t *testing.T) {
 		t.FailNow()
 	}
 }
+
+func TestPeer_HandleRequestMTIndexRequest(t *testing.T) {
+	s, err := testIntPeer2.ConnectTo(testIntPeer2.Contacts[0 /* testIntPeer1 */])
+	if err != nil {
+		t.FailNow()
+	}
+	ir := comm.IndexRequest{}
+	payload := ir.Dump()
+	n, err := s.Write(payload)
+	if err != nil || n != len(payload) {
+		t.FailNow()
+	}
+	ic := comm.IndexContent{}
+	msg, err := ic.Recv(s)
+	if err != nil {
+		t.FailNow()
+	}
+	if err = ic.Load(msg); err != nil {
+		t.FailNow()
+	}
+	if !ic.Index.Equals(&testIntPeer1.RootIndex) {
+		t.FailNow()
+	}
+}
