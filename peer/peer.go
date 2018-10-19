@@ -92,7 +92,8 @@ func (p *Peer) Export(dir string) error {
 // HandleStream is the background function responding to incoming connections
 func (p *Peer) HandleStream(s net.Stream) {
 	buf := bufio.NewReader(s)
-	recv := make([]byte, 1)
+
+	// determine message type
 	b, err := buf.Peek(1)
 	if err != nil {
 		panic(err)
@@ -102,16 +103,17 @@ func (p *Peer) HandleStream(s net.Stream) {
 		panic(err)
 	}
 
+	// receive message
 	msg, err := comm.EmptyMessageFromMessageType(*msgType)
 	if err != nil {
 		panic(err)
 	}
-
-	recv, err = msg.Recv(buf)
+	recv, err := msg.Recv(buf)
 	if err != nil {
 		panic(err)
 	}
 
+	// delegate message handling
 	p.handleRequest(s, *msgType, recv)
 }
 
