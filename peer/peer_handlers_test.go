@@ -1,6 +1,7 @@
 package peer
 
 import (
+	"bufio"
 	"bytes"
 	"strings"
 	"testing"
@@ -35,8 +36,9 @@ func TestPeer_HandleRequestMTBlockRequest(t *testing.T) {
 		t.FailNow()
 	}
 
+	buf := bufio.NewReader(s)
 	bc := comm.BlockContent{}
-	msg, err := bc.Recv(s)
+	msg, err := bc.Recv(buf)
 	if err != nil {
 		t.FailNow()
 	}
@@ -61,8 +63,9 @@ func TestPeer_HandleRequestMTIndexRequest(t *testing.T) {
 	if err != nil || n != len(payload) {
 		t.FailNow()
 	}
+	buf := bufio.NewReader(s)
 	ic := comm.IndexContent{}
-	msg, err := ic.Recv(s)
+	msg, err := ic.Recv(buf)
 	if err != nil {
 		t.FailNow()
 	}

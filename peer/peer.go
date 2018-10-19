@@ -6,11 +6,9 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -94,23 +92,27 @@ func (p *Peer) Export(dir string) error {
 // HandleStream is the background function responding to incoming connections
 func (p *Peer) HandleStream(s net.Stream) {
 	buf := bufio.NewReader(s)
-	recv := make([]byte, 1024*1024*2)
-	n, err := buf.Read(recv)
+	recv := make([]byte, 1)
+	b, err := buf.Peek(1)
 	if err != nil {
 		panic(err)
 	}
-	recv = recv[:n]
-
-	// log received data
-	prettyID := p.Host.ID().Pretty()
-	log.Printf("[P_%s]\tReceived: %s", prettyID[len(prettyID)-4:], hex.EncodeToString(recv))
-
-	messageType, err := comm.MessageTypeFromBytes(recv)
+	msgType, err := comm.MessageTypeFromBytes(b)
 	if err != nil {
-		// TODO: handle
 		panic(err)
 	}
-	p.handleRequest(s, *messageType, recv)
+
+	msg, err := comm.EmptyMessageFromMessageType(*msgType)
+	if err != nil {
+		panic(err)
+	}
+
+	recv, err = msg.Recv(buf)
+	if err != nil {
+		panic(err)
+	}
+
+	p.handleRequest(s, *msgType, recv)
 }
 
 // Import unmarshals a Peer from a directory containing the struct and keys
