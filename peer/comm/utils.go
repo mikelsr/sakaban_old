@@ -1,6 +1,69 @@
 package comm
 
-import "encoding/binary"
+import (
+	"bufio"
+	"encoding/binary"
+	"errors"
+)
+
+// EmptyMessageFromMessageType returns an empty message given a message type
+func EmptyMessageFromMessageType(msgType MessageType) (Message, error) {
+	var msg Message
+	switch msgType {
+	case MTBlockContent:
+		msg = &BlockContent{}
+	case MTBlockRequest:
+		msg = &BlockRequest{}
+	case MTIndexContent:
+		msg = &IndexContent{}
+	case MTIndexRequest:
+		msg = &IndexRequest{}
+	default:
+		return nil, errors.New("Invalid message type")
+	}
+	return msg, nil
+}
+
+// MessageTypeFromBytes reads the MessageType from the first element of a
+// byte slice
+func MessageTypeFromBytes(bytes []byte) (*MessageType, error) {
+	if len(bytes) < 1 {
+		return nil, errors.New("Invalid byte slice size")
+	}
+
+	messageType := MessageType(bytes[0])
+	if minMessageType <= messageType && messageType <= maxMessageType {
+		return &messageType, nil
+	}
+	return nil, errors.New("Unknown MessageType")
+}
+
+// RecvMessage reads all the content of a Message from a net.String
+// UNTESTED
+func RecvMessage(s *bufio.Reader, msg Message) ([]byte, error) {
+	buf := make([]byte, bufferSize)
+	// receive initial bytes
+	n, err := s.Read(buf)
+	if err != nil {
+		return nil, err
+	}
+	// trim received data
+	buf = buf[:n]
+	// extract total size of the message
+	msgSize := msg.Size(buf)
+
+	// receive complete message
+	for uint64(len(buf)) < msgSize {
+		recv := make([]byte, bufferSize)
+		n, err := s.Read(recv)
+		if err != nil {
+			return nil, err
+		}
+		recv = recv[:n]
+		buf = append(buf, recv...)
+	}
+	return buf, nil
+}
 
 // uint16FromBytes converts a byte slice into an unsigned 16 bit integer
 // LITTLE ENDIAN

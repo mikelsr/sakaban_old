@@ -1,12 +1,12 @@
 package comm
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 
 	"bitbucket.org/mikelsr/sakaban/fs"
-	net "github.com/libp2p/go-libp2p-net"
 	"github.com/satori/go.uuid"
 )
 
@@ -18,56 +18,9 @@ type MessageType byte
 type Message interface {
 	Dump() []byte
 	Load([]byte) error
-	Type() MessageType
-}
-
-// LongMessage has the necessary information to receive a full, long message
-type LongMessage interface {
+	Recv(s *bufio.Reader) ([]byte, error)
 	Size([]byte) uint64
-	Recv(s net.Stream) ([]byte, error)
-}
-
-/* Generic functions */
-
-// MessageTypeFromBytes reads the MessageType from the first element of a
-// byte slice
-func MessageTypeFromBytes(bytes []byte) (*MessageType, error) {
-	if len(bytes) < 1 {
-		return nil, errors.New("Invalid byte slice size")
-	}
-
-	messageType := MessageType(bytes[0])
-	if minMessageType <= messageType && messageType <= maxMessageType {
-		return &messageType, nil
-	}
-	return nil, errors.New("Unknown MessageType")
-}
-
-// recvLongMessage reads all the content of a LongMessage from a net.String
-// UNTESTED
-func recvLongMessage(s net.Stream, lm LongMessage) ([]byte, error) {
-	buf := make([]byte, bufferSize)
-	// receive initial bytes
-	n, err := s.Read(buf)
-	if err != nil {
-		return nil, err
-	}
-	// trim received data
-	buf = buf[:n]
-	// extract total size of the message
-	msgSize := lm.Size(buf)
-
-	// receive complete message
-	for uint64(len(buf)) < msgSize {
-		recv := make([]byte, bufferSize)
-		n, err := s.Read(recv)
-		if err != nil {
-			return nil, err
-		}
-		recv = recv[:n]
-		buf = append(buf, recv...)
-	}
-	return buf, nil
+	Type() MessageType
 }
 
 /* Block content */
@@ -137,9 +90,9 @@ func (bc *BlockContent) Load(msg []byte) error {
 	return nil
 }
 
-// Recv calls recvLongMessage to receive a complete BlockContent
-func (bc BlockContent) Recv(s net.Stream) ([]byte, error) {
-	return recvLongMessage(s, bc)
+// Recv calls RecvMessage to receive a complete BlockContent
+func (bc *BlockContent) Recv(s *bufio.Reader) ([]byte, error) {
+	return RecvMessage(s, bc)
 }
 
 // Size returns the total size of the message, represented in the bytes 1 to 9
@@ -197,6 +150,17 @@ func (br *BlockRequest) Load(msg []byte) error {
 	return nil
 }
 
+// Recv calls RecvMessage to receive a complete BlockRequest
+func (br *BlockRequest) Recv(s *bufio.Reader) ([]byte, error) {
+	return RecvMessage(s, br)
+}
+
+// Size returns the total size of the message
+// MessageType + BlockN + UUID + FilePathSize + filePath
+func (br BlockRequest) Size(msg []byte) uint64 {
+	return 1 + 1 + 2 + uint64(uint16FromBytes(msg[18:34]))
+}
+
 // Type returns the type of the Message (MTBlockRequest)
 func (br BlockRequest) Type() MessageType {
 	return MTBlockRequest
@@ -236,9 +200,9 @@ func (ic *IndexContent) Load(msg []byte) error {
 	return nil
 }
 
-// Recv calls recvLongMessage to receive a complete IndexContent
-func (ic IndexContent) Recv(s net.Stream) ([]byte, error) {
-	return recvLongMessage(s, ic)
+// Recv calls RecvMessage to receive a complete IndexContent
+func (ic *IndexContent) Recv(s *bufio.Reader) ([]byte, error) {
+	return RecvMessage(s, ic)
 }
 
 // Size returns the total size of the message, represented in the bytes 1 to 9
@@ -268,6 +232,17 @@ func (ir *IndexRequest) Load(msg []byte) error {
 		return errors.New("Invalid message type")
 	}
 	return nil
+}
+
+// Recv calls RecvMessage to receive a complete IndexRequest
+// REDUNDANT, IndexRequest has no content
+func (ir *IndexRequest) Recv(s *bufio.Reader) ([]byte, error) {
+	return RecvMessage(s, ir)
+}
+
+// Size returns the total size of the message
+func (ir IndexRequest) Size(msg []byte) uint64 {
+	return 1
 }
 
 // Type returns the type of the Message (MTIndexRequest)
