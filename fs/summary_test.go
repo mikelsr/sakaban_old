@@ -22,6 +22,21 @@ func TestMakeSummary(t *testing.T) {
 	}
 }
 
+func TestSummary_Diff(t *testing.T) {
+	s1 := Summary{Blocks: []uint64{1, 3, 2}}
+	s2 := Summary{Blocks: []uint64{1, 2, 3, 4}}
+	expectedDiff := []uint64{0, 2, 3, 4}
+	diff, change := s1.Diff(&s2)
+	if !change {
+		t.FailNow()
+	}
+	for i, block := range diff {
+		if block != expectedDiff[i] {
+			t.FailNow()
+		}
+	}
+}
+
 // TestSummary_Equals checks that true is returned when the content is the same
 // and false when it is different
 func TestSummary_Equals(t *testing.T) {

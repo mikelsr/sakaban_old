@@ -33,6 +33,12 @@ func MakeIndex(summaries ...*Summary) (*Index, error) {
 	return i, nil
 }
 
+// Comparison stores the cahnges made from one index to another
+type Comparison struct {
+	Additions map[string]*Summary
+	Deletions []string
+}
+
 // Add adds a new set of Summary to Index.Files
 func (i *Index) Add(summaries ...*Summary) error {
 	for _, s := range summaries {
@@ -64,6 +70,35 @@ func (i *Index) AddParent(summaries ...*Summary) error {
 		i.Parents[s.ID] = s
 	}
 	return nil
+}
+
+// Compare lists changes from one index (i) to another (ni)
+func (i *Index) Compare(ni *Index) *Comparison {
+	c := Comparison{}
+	c.Additions = make(map[string]*Summary)
+	c.Deletions = make([]string, 0)
+
+	// deletions
+	for path, sum := range i.Files {
+		if _, found := ni.Files[path]; !found {
+			if _, found = ni.Deletions[sum.ID]; found {
+				c.Deletions = append(c.Deletions, path)
+			}
+		}
+	}
+
+	// additions and modifications
+	for path, sum := range ni.Files {
+		if sum2, found := i.Files[path]; found {
+			diff, change := sum.Diff(sum2)
+			if !change {
+				continue
+			}
+			c.Additions[path] = &Summary{Blocks: diff}
+		}
+	}
+
+	return &c
 }
 
 // Contains compares the hashes of the blocks of a file with the summaries in

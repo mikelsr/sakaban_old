@@ -28,6 +28,26 @@ func MakeSummary(f *File) *Summary {
 	return &s
 }
 
+// Diff compares the blocks of two summaries
+// if the block is up to date, the value is 0
+// otherwise it's the value of the block in s2
+func (s *Summary) Diff(s2 *Summary) ([]uint64, bool) {
+	change := false
+	blocks := make([]uint64, len(s2.Blocks))
+	for i, block := range s2.Blocks {
+		if i >= len(s.Blocks) {
+			change = true
+			blocks[i] = block
+			continue
+		}
+		if block != s.Blocks[i] {
+			change = true
+			blocks[i] = block
+		}
+	}
+	return blocks, change
+}
+
 // Equals is used to compare both the CONTENT of a Summary
 func (s *Summary) Equals(s2 *Summary) bool {
 	if len(s.Blocks) != len(s2.Blocks) {
