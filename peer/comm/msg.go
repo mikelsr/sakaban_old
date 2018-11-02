@@ -43,7 +43,7 @@ func (bc BlockContent) Dump() []byte {
 	dump = append(dump, bc.FileID.Bytes()...)
 	dump = append(dump, bc.Content...)
 	// calculate size of message
-	totalLen := uint64(len(dump) + 8)
+	totalLen := uint64(len(dump) + sizeOfMessage)
 	// create new massage merging the base message and its size
 	cDump := []byte{dump[0]}
 	cDump = append(cDump, uint64ToBytes(totalLen)...)
@@ -54,22 +54,38 @@ func (bc BlockContent) Dump() []byte {
 // Load reads blockN, blockSize, fileID, content from a byte slice created
 // by br.Dump()
 func (bc *BlockContent) Load(msg []byte) error {
+	index := 0
+	headerSize := sizeOfMessageType + sizeOfMessage + sizeOfFileID + sizeOfBlockN + sizeOfBlockSize
+
 	// parse contents of the message, extract values
-	if len(msg) < 28 || MessageType(msg[0]) != MTBlockContent {
+	if len(msg) < headerSize || MessageType(msg[0]) != MTBlockContent {
 		return errors.New("Invalid message type")
 	}
+	index += sizeOfMessageType
+
 	totalSize := bc.Size(msg)
 	if uint64(len(msg)) != totalSize {
 		return fmt.Errorf("Invalid BlockContent dump, expected %dB got %dB", totalSize, len(msg))
 	}
+	index += sizeOfMessage
 
-	blockN := uint8(msg[9])
-	blockSize := uint16FromBytes(msg[10:12])
-	fileID, err := uuid.FromBytes(msg[12:28])
+	// block number
+	blockN := uint8(msg[index])
+	index += sizeOfBlockN
+
+	// block size
+	blockSize := uint16FromBytes(msg[index : index+sizeOfBlockSize])
+	index += sizeOfBlockSize
+
+	// file id
+	fileID, err := uuid.FromBytes(msg[index : index+sizeOfFileID])
 	if err != nil {
 		return err
 	}
-	content := msg[28:]
+	index += sizeOfFileID
+
+	// content
+	content := msg[index:]
 
 	// validate extracted values
 	if len(content) > int(^uint16(0))*1024 { // bigger than MaxUint8
@@ -95,9 +111,9 @@ func (bc *BlockContent) Recv(s *bufio.Reader) ([]byte, error) {
 	return RecvMessage(s, bc)
 }
 
-// Size returns the total size of the message, represented in the bytes 1 to 9
+// Size returns the total size of the message
 func (bc BlockContent) Size(msg []byte) uint64 {
-	return uint64FromBytes(msg[1:9])
+	return uint64FromBytes(msg[sizeOfMessageType : sizeOfMessage+sizeOfMessage])
 }
 
 // Type returns the type of the Message (MTBlockContent)
@@ -127,20 +143,34 @@ func (br BlockRequest) Dump() []byte {
 
 // Load reads blockN and fileID from a byte slice created by br.Dump()
 func (br *BlockRequest) Load(msg []byte) error {
-	if len(msg) < 20 || MessageType(msg[0]) != MTBlockRequest {
+	index := 0
+	headerSize := sizeOfMessageType + sizeOfBlockN + sizeOfFileID + sizeOfFilePathSize
+
+	if len(msg) < headerSize || MessageType(msg[0]) != MTBlockRequest {
 		return errors.New("Invalid message type")
 	}
-	blockN := uint8(msg[1])
-	fileID, err := uuid.FromBytes(msg[2:18])
+	index += sizeOfMessageType
+
+	// block number
+	blockN := uint8(msg[index])
+	index += sizeOfBlockN
+
+	// file id
+	fileID, err := uuid.FromBytes(msg[index : index+sizeOfFileID])
 	if err != nil {
 		return err
 	}
+	index += sizeOfFileID
 
-	filePathSize := int(uint16FromBytes(msg[18:20]))
-	if len(msg) != 20+filePathSize {
+	// filepath size
+	filePathSize := int(uint16FromBytes(msg[index : index+sizeOfFilePathSize]))
+	index += sizeOfFilePathSize
+	if len(msg) != index+filePathSize {
 		return errors.New("Incomplete message content")
 	}
-	filePath := string(msg[20 : 20+filePathSize])
+
+	// filepath
+	filePath := string(msg[index : index+filePathSize])
 
 	// both values extracted successfully
 	br.BlockN = blockN
@@ -158,7 +188,9 @@ func (br *BlockRequest) Recv(s *bufio.Reader) ([]byte, error) {
 // Size returns the total size of the message
 // MessageType + BlockN + UUID + FilePathSize + filePath
 func (br BlockRequest) Size(msg []byte) uint64 {
-	return 1 + 1 + 2 + uint64(uint16FromBytes(msg[18:34]))
+	// return 1 + 1 + 2 + uint64(uint16FromBytes(msg[18:34]))
+	s := sizeOfMessageType + sizeOfBlockN + sizeOfFileID
+	return uint64(s) + uint64(sizeOfFilePathSize) + uint64(uint16FromBytes(msg[s:s+sizeOfFilePathSize]))
 }
 
 // Type returns the type of the Message (MTBlockRequest)
@@ -179,20 +211,29 @@ type IndexContent struct {
 // marshalled fs.Index
 func (ic IndexContent) Dump() []byte {
 	index, _ := json.Marshal(ic.Index)
-	dump := append([]byte{byte(MTIndexContent)}, uint64ToBytes(uint64(len(index)+9))...)
+	dump := append([]byte{byte(MTIndexContent)}, uint64ToBytes(uint64(len(index)+sizeOfMessageType+sizeOfMessage))...)
 	return append(dump, index...)
 }
 
 // Load creates a fs.Index given a MTIndexContent message
 func (ic *IndexContent) Load(msg []byte) error {
-	if len(msg) < 9 || MessageType(msg[0]) != MTIndexContent {
+	index := 0
+	headerSize := sizeOfMessageType + sizeOfMessage
+
+	if len(msg) < headerSize || MessageType(msg[0]) != MTIndexContent {
 		return errors.New("Invalid message type")
 	}
+	index += sizeOfMessageType
+
+	// message size
 	totalSize := ic.Size(msg)
+	index += sizeOfMessage
+
+	// content of index
 	if uint64(len(msg)) != totalSize {
 		return fmt.Errorf("Invalid BlockContent dump, expected %dB got %dB", totalSize, len(msg))
 	}
-	if err := json.Unmarshal(msg[9:], &ic.Index); err != nil {
+	if err := json.Unmarshal(msg[index:], &ic.Index); err != nil {
 		return err
 	}
 
@@ -207,7 +248,7 @@ func (ic *IndexContent) Recv(s *bufio.Reader) ([]byte, error) {
 
 // Size returns the total size of the message, represented in the bytes 1 to 9
 func (ic IndexContent) Size(msg []byte) uint64 {
-	return uint64FromBytes(msg[1:9])
+	return uint64FromBytes(msg[sizeOfMessageType : sizeOfMessageType+sizeOfMessage])
 }
 
 // Type returns the type of the Message (MTIndexContent)
@@ -228,7 +269,7 @@ func (ir IndexRequest) Dump() []byte {
 // Load creates a IndexRequest given the content bytes
 func (ir *IndexRequest) Load(msg []byte) error {
 	// The only content of the message is the message type (one byte)
-	if len(msg) != 1 || MessageType(msg[0]) != MTIndexRequest {
+	if len(msg) != sizeOfMessageType || MessageType(msg[0]) != MTIndexRequest {
 		return errors.New("Invalid message type")
 	}
 	return nil
