@@ -17,6 +17,7 @@ type File struct {
 	ID     uuid.UUID
 	Parent uuid.UUID
 	Path   string
+	Perm   os.FileMode // permission of the file
 	Blocks []*Block
 }
 
@@ -27,7 +28,11 @@ func MakeFile(path string) (*File, error) {
 	if !IsFile(path) {
 		return nil, fmt.Errorf("Not a valid path to a file: '%s'", path)
 	}
-	f := File{ID: id, Path: path}
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	f := File{ID: id, Path: path, Perm: info.Mode()}
 	blocks, _ := f.Slice()
 	f.Blocks = blocks
 	return &f, nil
@@ -117,4 +122,16 @@ func (f *File) String() string {
 	s := MakeSummary(f)
 	b, _ := json.Marshal(s)
 	return string(b)
+}
+
+func (f *File) Write() error {
+	fi, err := os.OpenFile(f.Path, os.O_CREATE|os.O_WRONLY, f.Perm)
+	if err != nil {
+		return err
+	}
+	// TODO: avoid rewriting unchanged blocks
+	for _, b := range f.Blocks {
+		fi.Write(b.Content)
+	}
+	return nil
 }

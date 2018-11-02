@@ -163,3 +163,22 @@ func TestFile_String(t *testing.T) {
 		t.FailNow()
 	}
 }
+
+func TestFile_Write(t *testing.T) {
+	f, err := MakeFile(muffinPath)
+	if err != nil {
+		t.FailNow()
+	}
+
+	// unable to write
+	f.Path = testFailDir + "/muffing.png"
+	if err = f.Write(); err == nil {
+		t.FailNow()
+	}
+
+	// successfully write
+	f.Path = testDir + "/muffin.png"
+	if err = f.Write(); err != nil {
+		t.FailNow()
+	}
+}
