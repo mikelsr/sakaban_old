@@ -90,7 +90,7 @@ func (i *Index) Compare(ni *Index) *Comparison {
 	// additions and modifications
 	for path, sum := range ni.Files {
 		if sum2, found := i.Files[path]; found {
-			diff, change := sum.Diff(sum2)
+			diff, change := sum2.Diff(sum)
 			if !change {
 				continue
 			}

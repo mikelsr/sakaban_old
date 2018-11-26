@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"reflect"
 	"testing"
 
 	uuid "github.com/satori/go.uuid"
@@ -73,6 +74,32 @@ func TestIndex_AddParent(t *testing.T) {
 	// repeated addition
 	err = i.AddParent(s)
 	if err == nil {
+		t.FailNow()
+	}
+}
+
+func TestIndex_Compare(t *testing.T) {
+	id1, _ := uuid.NewV4()
+	id2, _ := uuid.NewV4()
+	id3, _ := uuid.NewV4()
+	sum1 := Summary{ID: id1.String(), Path: "/1", Blocks: []uint64{1, 2, 3}}
+	sum2 := Summary{ID: id2.String(), Path: "/2", Blocks: []uint64{4, 5, 6}}
+	sum3 := Summary{ID: id3.String(), Path: "/3", Blocks: []uint64{7, 8, 9}}
+
+	sum2_1 := Summary{ID: id2.String(), Path: "/2", Blocks: []uint64{5, 4, 6}}
+
+	index1, _ := MakeIndex(&sum1, &sum2, &sum3)
+	index2, _ := MakeIndex(&sum1, &sum2_1)
+	index2.Deletions[sum3.ID] = &sum3
+
+	expected := new(Comparison)
+	expected.Additions = make(map[string]*Summary)
+	expected.Additions["/2"] = &Summary{Blocks: []uint64{5, 4, 0}}
+	expected.Deletions = []string{sum3.Path}
+
+	comparison := index1.Compare(index2)
+
+	if !reflect.DeepEqual(expected, comparison) {
 		t.FailNow()
 	}
 }
