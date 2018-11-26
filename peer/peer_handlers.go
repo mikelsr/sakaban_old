@@ -3,6 +3,7 @@ package peer
 import (
 	"errors"
 	"log"
+	"os"
 	"path/filepath"
 
 	"bitbucket.org/mikelsr/sakaban/fs"
@@ -69,5 +70,27 @@ func (p *Peer) handleRequestMTIndexRequest(s net.Stream, ir comm.IndexRequest) e
 	if n, err := s.Write(raw); n != len(raw) || err != nil {
 		return errors.New("Error writing to steam")
 	}
+	return nil
+}
+
+func (p *Peer) handleRequestMTIndexContent(s net.Stream, ir comm.IndexContent) error {
+	s.Close()
+	i := p.RootIndex
+	ni := &fs.Index{}
+	if err := ir.Load(ir.Dump()); err != nil {
+		return err
+	}
+	comparison := i.Compare(ni)
+	for _, path := range comparison.Deletions {
+		// TODO: delete path
+		os.Remove(path)
+	}
+	stack := newFileStack()
+	for _, sum := range comparison.Additions {
+		stack.push(sum)
+	}
+
+	// TODO: while stack is not empty, request and update files of stack
+
 	return nil
 }

@@ -40,8 +40,9 @@ type Peer struct {
 	PubKey *rsa.PublicKey  `json:"-"`
 
 	// fs
-	RootDir   string   `json:"root_dir"` // Directory to be synchronized
-	RootIndex fs.Index // Index of RootDir
+	RootDir   string    `json:"root_dir"` // Directory to be synchronized
+	RootIndex fs.Index  // Index of RootDir
+	stack     fileStack // files being updated
 }
 
 // BrokerAddr returns the formatted address of the broker assigned to the peer
