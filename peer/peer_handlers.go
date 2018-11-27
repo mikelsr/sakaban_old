@@ -64,6 +64,18 @@ func (p *Peer) handleRequestMTBlockContent(s net.Stream, bc *comm.BlockContent) 
 
 	p.stack.tmpFile.Blocks[bc.BlockN] = &fs.Block{Content: bc.Content}
 
+	// if file is not complete, return
+	for i := range f.Blocks {
+		if i != 0 {
+			if p.stack.tmpFile.Blocks[i] == nil {
+				return nil
+			}
+		}
+	}
+
+	// if file is complete, write file
+	p.stack.writeFile()
+	p.stack.iterFile()
 	return nil
 }
 
@@ -120,6 +132,7 @@ func (p *Peer) handleRequestMTIndexContent(s net.Stream, ir *comm.IndexContent) 
 	for _, sum := range comparison.Additions {
 		stack.push(sum)
 	}
+	p.stack.iterFile()
 
 	// TODO: while stack is not empty, request and update files of stack
 

@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"bitbucket.org/mikelsr/sakaban/fs"
+	uuid "github.com/satori/go.uuid"
 )
 
 // fileStack is used to store the files to be retrieved from another peer
@@ -15,6 +16,33 @@ type fileStack struct {
 
 func newFileStack() *fileStack {
 	return &fileStack{files: make([]*fs.Summary, 0)}
+}
+
+// iterFile loads the next file into f.tmpFile
+func (f *fileStack) iterFile() {
+	f.writeMutex.Lock()
+	defer f.writeMutex.Unlock()
+	_, n := f.pop()
+	if n != -1 {
+		newFile := f.peek()
+		f.tmpFile = new(fs.File)
+		f.tmpFile.ID, _ = uuid.FromString(newFile.ID)
+		f.tmpFile.Parent, _ = uuid.FromString(newFile.Parent)
+		f.tmpFile.Path = newFile.Path
+		f.tmpFile.Blocks = make([]*fs.Block, len(newFile.Blocks))
+	} else {
+		f.tmpFile = nil
+	}
+}
+
+// write file writes the current file to permanent storage
+func (f *fileStack) writeFile() error {
+	f.writeMutex.Lock()
+	defer f.writeMutex.Unlock()
+	if err := f.tmpFile.Write(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (f *fileStack) peek() *fs.Summary {
