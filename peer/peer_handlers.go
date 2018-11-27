@@ -2,6 +2,7 @@ package peer
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,7 +15,11 @@ import (
 func (p *Peer) handleRequest(s net.Stream, msgType comm.MessageType, msg []byte) error {
 	switch msgType {
 	case comm.MTBlockContent:
-		break
+		bc := new(comm.BlockContent)
+		if err := bc.Load(msg); err != nil {
+			return errors.New("Error unmarshalling BlockContent")
+		}
+		return p.handleRequestMTBlockContent(s, bc)
 	case comm.MTBlockRequest:
 		br := comm.BlockRequest{}
 		if err := br.Load(msg); err != nil {
@@ -22,7 +27,11 @@ func (p *Peer) handleRequest(s net.Stream, msgType comm.MessageType, msg []byte)
 		}
 		return p.handleRequestMTBlockRequest(s, br)
 	case comm.MTIndexContent:
-		break
+		ic := new(comm.IndexContent)
+		if err := ic.Load(msg); err != nil {
+			return errors.New("Error unmarshalling BlockContent")
+		}
+		return p.handleRequestMTIndexContent(s, ic)
 	case comm.MTIndexRequest:
 		ir := comm.IndexRequest{}
 		if err := ir.Load(msg); err != nil {
@@ -30,6 +39,31 @@ func (p *Peer) handleRequest(s net.Stream, msgType comm.MessageType, msg []byte)
 		}
 		return p.handleRequestMTIndexRequest(s, ir)
 	}
+	return nil
+}
+
+func (p *Peer) handleRequestMTBlockContent(s net.Stream, bc *comm.BlockContent) error {
+	if p.stack.tmpFile == nil {
+		return errors.New("Didn't expect any blocks")
+	}
+
+	f := p.stack.peek()
+	fid, eid := bc.FileID.String(), f.ID
+
+	if fid != eid {
+		return fmt.Errorf("File IDs do not match: got %s expected %s", fid, eid)
+	}
+
+	if bc.BlockN > uint8(len(f.Blocks)) {
+		return fmt.Errorf("Block index out of range: max is %d got %d", len(f.Blocks), bc.BlockN)
+	}
+
+	if f.Blocks[bc.BlockN] == 0 {
+		return fmt.Errorf("Block %d was unchanged", bc.BlockN)
+	}
+
+	p.stack.tmpFile.Blocks[bc.BlockN] = &fs.Block{Content: bc.Content}
+
 	return nil
 }
 
@@ -73,13 +107,10 @@ func (p *Peer) handleRequestMTIndexRequest(s net.Stream, ir comm.IndexRequest) e
 	return nil
 }
 
-func (p *Peer) handleRequestMTIndexContent(s net.Stream, ir comm.IndexContent) error {
+func (p *Peer) handleRequestMTIndexContent(s net.Stream, ir *comm.IndexContent) error {
 	s.Close()
 	i := p.RootIndex
-	ni := &fs.Index{}
-	if err := ir.Load(ir.Dump()); err != nil {
-		return err
-	}
+	ni := &ir.Index
 	comparison := i.Compare(ni)
 	for _, path := range comparison.Deletions {
 		// TODO: delete path
