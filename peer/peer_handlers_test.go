@@ -17,6 +17,7 @@ import (
 )
 
 func TestPeer_HandleRequestMTBlockContent(t *testing.T) {
+	fmt.Println("-- Starting BlockContent test")
 	fileName := filepath.Join(testDir, "testfile")
 	fileID, _ := uuid.NewV4()
 	testIntPeer1.stack = *newFileStack()
@@ -94,9 +95,11 @@ func TestPeer_HandleRequestMTBlockContent(t *testing.T) {
 		!bytes.Equal(f.Blocks[1].Content, bc2.Content) {
 		t.FailNow()
 	}
+	fmt.Println("-- Ending BlockContent test")
 }
 
 func TestPeer_HandleRequestMTBlockRequest(t *testing.T) {
+	fmt.Println("-- Starting BlockRequest test")
 	s, err := testIntPeer2.ConnectTo(testIntPeer2.Contacts[0 /* testIntPeer1 */])
 	if err != nil {
 		t.FailNow()
@@ -135,9 +138,11 @@ func TestPeer_HandleRequestMTBlockRequest(t *testing.T) {
 	if !bytes.Equal(f.Blocks[blockN].Content, bc.Content) {
 		t.FailNow()
 	}
+	fmt.Println("-- Ending BlockRequest test")
 }
 
 func TestPeer_HandleRequestMTIndexContent(t *testing.T) {
+	fmt.Println("-- Starting IndexContent test")
 	testIntPeer3.waiting = true
 	ic := comm.IndexContent{Index: testIntPeer1.RootIndex}
 	s, err := testIntPeer2.ConnectTo(testIntPeer2.Contacts[1 /* testIntPeer3 */])
@@ -145,13 +150,15 @@ func TestPeer_HandleRequestMTIndexContent(t *testing.T) {
 		t.FailNow()
 	}
 	s.Write(ic.Dump())
-	log.Println("[Test]\nWaiting for testIntPeer3 to receive index...")
-	for len(testIntPeer3.stack.files) == len(ic.Index.Files) {
-		// timeout if testIntPeer3 doesn't receive/handle the index
+	log.Println("[Test]\tWaiting for testIntPeer3 to receive index...")
+	for len(testIntPeer3.stack.files) != len(ic.Index.Files) {
+		// timeout if index isn't loaded correctly by Peer 3
 	}
+	fmt.Println("-- Ending IndexContent test")
 }
 
 func TestPeer_HandleRequestMTIndexRequest(t *testing.T) {
+	fmt.Println("-- Starting IndexRequest test")
 	s, err := testIntPeer2.ConnectTo(testIntPeer2.Contacts[0 /* testIntPeer1 */])
 	if err != nil {
 		t.FailNow()
@@ -174,4 +181,5 @@ func TestPeer_HandleRequestMTIndexRequest(t *testing.T) {
 	if !ic.Index.Equals(&testIntPeer1.RootIndex) {
 		t.FailNow()
 	}
+	fmt.Println("-- Ending IndexRequest test")
 }

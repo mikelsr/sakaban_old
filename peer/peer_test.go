@@ -88,6 +88,13 @@ func createTestPeers() (*Peer, *Peer, *Peer) {
 	return p1, p2, p3
 }
 
+// testListenAndServe stops the tests whenever broker.ListenAndServe fails
+func testListenAndServe(b *broker.Broker, ip string, port int) {
+	if err := testBroker.ListenAndServe(testBrokerIP, testBrokerPort); err != nil {
+		panic(err)
+	}
+}
+
 func TestMain(m *testing.M) {
 	// create test peer with key pair
 	tp, err := NewPeer()
@@ -109,14 +116,13 @@ func TestMain(m *testing.M) {
 	ExportRSAKeys(filepath.Join(testDir, "import"),
 		testPeer.PrvKey, testPeer.PubKey)
 	// create and run test broker
+
 	testBroker = *broker.NewBroker()
-	go testBroker.ListenAndServe(testBrokerIP, testBrokerPort)
+	go testListenAndServe(&testBroker, testBrokerIP, testBrokerPort)
+
 	testIntPeer1, testIntPeer2, testIntPeer3 = createTestPeers()
 
 	// cleanup
-	defer testIntPeer1.Host.Close()
-	defer testIntPeer2.Host.Close()
-	defer testIntPeer3.Host.Close()
 	defer os.RemoveAll(testDir)
 
 	// run tests

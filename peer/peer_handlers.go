@@ -126,28 +126,21 @@ func (p *Peer) handleRequestMTBlockRequest(s net.Stream, br comm.BlockRequest) e
 
 func (p *Peer) handleRequestMTIndexContent(s net.Stream, ir *comm.IndexContent) error {
 	if !p.waiting {
-		fmt.Println("NAIN")
 		return errors.New("Unexpected index received")
 	}
-	fmt.Println("Received index")
 	i := p.RootIndex
 	ni := &ir.Index
 	comparison := i.Compare(ni)
-	fmt.Println("Parsed index")
 	for _, path := range comparison.Deletions {
 		// TODO: delete path
 		os.Remove(path)
 	}
 	stack := newFileStack()
 	for _, sum := range comparison.Additions {
-		fmt.Println("PUSH")
-		fmt.Println(sum)
 		stack.push(sum)
 	}
 	stack.push(nil)
 	stack.iterFile()
-	fmt.Println("Created stack")
-	fmt.Println(stack)
 
 	p.stack = *stack
 

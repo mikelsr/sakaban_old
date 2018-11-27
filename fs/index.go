@@ -95,6 +95,8 @@ func (i *Index) Compare(ni *Index) *Comparison {
 				continue
 			}
 			c.Additions[path] = &Summary{Blocks: diff}
+		} else {
+			c.Additions[path] = sum
 		}
 	}
 
