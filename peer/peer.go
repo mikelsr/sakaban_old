@@ -35,6 +35,9 @@ type Peer struct {
 	BrokerPort int       // TCP port of the host
 	Contacts   []Contact `json:"contacts"` // List of trusted contacts
 	Host       host.Host `json:"-"`        // Host is the libp2p host
+	waiting    bool      /* true if an index was requested and has not yet been
+	received */
+
 	// PrvKey and PubKey are used to verify the identity of the Peer
 	PrvKey *rsa.PrivateKey `json:"-"`
 	PubKey *rsa.PublicKey  `json:"-"`

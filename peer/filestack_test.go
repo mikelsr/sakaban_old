@@ -6,7 +6,23 @@ import (
 	"bitbucket.org/mikelsr/sakaban/fs"
 )
 
-func TestFileStack_Peek(t *testing.T) {
+func TestFileStack_iterFile(t *testing.T) {
+	s1 := fs.Summary{Path: "1"}
+	s2 := fs.Summary{Path: "2"}
+	stack := fileStack{files: []*fs.Summary{&s1, &s2}}
+	stack.iterFile()
+	s := stack.peek()
+	if s == nil || s.Path != s1.Path {
+		t.FailNow()
+	}
+	stack.iterFile()
+	s = stack.peek()
+	if s != nil {
+		t.FailNow()
+	}
+}
+
+func TestFileStack_peek(t *testing.T) {
 	s1 := fs.Summary{Path: "1"}
 	stack := fileStack{files: []*fs.Summary{}}
 	if stack.peek() != nil {
@@ -18,7 +34,7 @@ func TestFileStack_Peek(t *testing.T) {
 	}
 }
 
-func TestFileStack_Pop(t *testing.T) {
+func TestFileStack_pop(t *testing.T) {
 	s1 := fs.Summary{Path: "1"}
 	s2 := fs.Summary{Path: "2"}
 	stack := fileStack{files: []*fs.Summary{&s1, &s2}}
@@ -33,7 +49,7 @@ func TestFileStack_Pop(t *testing.T) {
 	}
 }
 
-func TestFileStack_Push(t *testing.T) {
+func TestFileStack_push(t *testing.T) {
 	s1 := fs.Summary{Path: "1"}
 	s2 := fs.Summary{Path: "2"}
 

@@ -1,8 +1,6 @@
 package peer
 
 import (
-	"sync"
-
 	"bitbucket.org/mikelsr/sakaban/fs"
 	uuid "github.com/satori/go.uuid"
 )
@@ -10,8 +8,8 @@ import (
 // fileStack is used to store the files to be retrieved from another peer
 type fileStack struct {
 	files      []*fs.Summary
-	writeMutex sync.Mutex
 	tmpFile    *fs.File // temporary file to store blocks
+	writeMutex chan bool
 }
 
 func newFileStack() *fileStack {
@@ -20,10 +18,8 @@ func newFileStack() *fileStack {
 
 // iterFile loads the next file into f.tmpFile
 func (f *fileStack) iterFile() {
-	f.writeMutex.Lock()
-	defer f.writeMutex.Unlock()
 	_, n := f.pop()
-	if n != -1 {
+	if n != 0 {
 		newFile := f.peek()
 		f.tmpFile = new(fs.File)
 		f.tmpFile.ID, _ = uuid.FromString(newFile.ID)
@@ -33,16 +29,8 @@ func (f *fileStack) iterFile() {
 	} else {
 		f.tmpFile = nil
 	}
-}
-
-// write file writes the current file to permanent storage
-func (f *fileStack) writeFile() error {
-	f.writeMutex.Lock()
-	defer f.writeMutex.Unlock()
-	if err := f.tmpFile.Write(); err != nil {
-		return err
-	}
-	return nil
+	// unlock write mutex
+	f.writeMutex = make(chan bool, 1)
 }
 
 func (f *fileStack) peek() *fs.Summary {
@@ -59,10 +47,22 @@ func (f *fileStack) pop() (*fs.Summary, int) {
 		return nil, -1
 	}
 	s := f.files[lenght]
-	f.files = f.files[:lenght]
+	if lenght == 0 {
+		f.files = make([]*fs.Summary, 0)
+	} else {
+		f.files = f.files[:lenght]
+	}
 	return s, lenght
 }
 
 func (f *fileStack) push(s *fs.Summary) {
 	f.files = append(f.files, s)
+}
+
+// write file writes the current file to permanent storage
+func (f *fileStack) writeFile() error {
+	if err := f.tmpFile.Write(); err != nil {
+		return err
+	}
+	return nil
 }

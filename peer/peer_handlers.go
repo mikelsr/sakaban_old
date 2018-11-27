@@ -73,9 +73,22 @@ func (p *Peer) handleRequestMTBlockContent(s net.Stream, bc *comm.BlockContent) 
 		}
 	}
 
-	// if file is complete, write file
-	p.stack.writeFile()
-	p.stack.iterFile()
+	// if file is complete
+	select {
+	// another routine is writing the file
+	case <-p.stack.writeMutex:
+		// keep write mutex locked
+		p.stack.writeMutex <- true
+		break
+	// no other routine is writing the file
+	default:
+		// lock write mutex
+		p.stack.writeMutex <- true
+		// write file
+		p.stack.writeFile()
+		// prepare next file
+		p.stack.iterFile()
+	}
 	return nil
 }
 
