@@ -1,6 +1,8 @@
 package peer
 
 import (
+	"os"
+
 	"bitbucket.org/mikelsr/sakaban/fs"
 	uuid "github.com/satori/go.uuid"
 )
@@ -60,7 +62,8 @@ func (f *fileStack) push(s *fs.Summary) {
 }
 
 // write file writes the current file to permanent storage
-func (f *fileStack) writeFile() error {
+func (f *fileStack) writeFile(perm os.FileMode) error {
+	f.tmpFile.Perm = perm
 	if err := f.tmpFile.Write(); err != nil {
 		return err
 	}

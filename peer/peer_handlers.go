@@ -13,6 +13,7 @@ import (
 )
 
 func (p *Peer) handleRequest(s net.Stream, msgType comm.MessageType, msg []byte) error {
+	defer s.Close()
 	switch msgType {
 	case comm.MTBlockContent:
 		bc := new(comm.BlockContent)
@@ -85,7 +86,8 @@ func (p *Peer) handleRequestMTBlockContent(s net.Stream, bc *comm.BlockContent) 
 		// lock write mutex
 		p.stack.writeMutex <- true
 		// write file
-		p.stack.writeFile()
+		// TODO: correct permission
+		p.stack.writeFile(0755)
 		// prepare next file
 		p.stack.iterFile()
 	}
@@ -134,6 +136,9 @@ func (p *Peer) handleRequestMTIndexRequest(s net.Stream, ir comm.IndexRequest) e
 
 func (p *Peer) handleRequestMTIndexContent(s net.Stream, ir *comm.IndexContent) error {
 	s.Close()
+	if !p.waiting {
+		return errors.New("Unexpected index received")
+	}
 	i := p.RootIndex
 	ni := &ir.Index
 	comparison := i.Compare(ni)
