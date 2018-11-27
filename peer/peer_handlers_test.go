@@ -138,7 +138,17 @@ func TestPeer_HandleRequestMTBlockRequest(t *testing.T) {
 }
 
 func TestPeer_HandleRequestMTIndexContent(t *testing.T) {
-
+	testIntPeer3.waiting = true
+	ic := comm.IndexContent{Index: testIntPeer1.RootIndex}
+	s, err := testIntPeer2.ConnectTo(testIntPeer2.Contacts[1 /* testIntPeer3 */])
+	if err != nil {
+		t.FailNow()
+	}
+	s.Write(ic.Dump())
+	log.Println("[Test]\nWaiting for testIntPeer3 to receive index...")
+	for len(testIntPeer3.stack.files) == len(ic.Index.Files) {
+		// timeout if testIntPeer3 doesn't receive/handle the index
+	}
 }
 
 func TestPeer_HandleRequestMTIndexRequest(t *testing.T) {

@@ -124,6 +124,38 @@ func (p *Peer) handleRequestMTBlockRequest(s net.Stream, br comm.BlockRequest) e
 	return nil
 }
 
+func (p *Peer) handleRequestMTIndexContent(s net.Stream, ir *comm.IndexContent) error {
+	if !p.waiting {
+		fmt.Println("NAIN")
+		return errors.New("Unexpected index received")
+	}
+	fmt.Println("Received index")
+	i := p.RootIndex
+	ni := &ir.Index
+	comparison := i.Compare(ni)
+	fmt.Println("Parsed index")
+	for _, path := range comparison.Deletions {
+		// TODO: delete path
+		os.Remove(path)
+	}
+	stack := newFileStack()
+	for _, sum := range comparison.Additions {
+		fmt.Println("PUSH")
+		fmt.Println(sum)
+		stack.push(sum)
+	}
+	stack.push(nil)
+	stack.iterFile()
+	fmt.Println("Created stack")
+	fmt.Println(stack)
+
+	p.stack = *stack
+
+	// TODO: while stack is not empty, request and update files of stack
+	p.waiting = false
+	return nil
+}
+
 func (p *Peer) handleRequestMTIndexRequest(s net.Stream, ir comm.IndexRequest) error {
 	// TODO: ReloadIndex as a background routine
 	ic := comm.IndexContent{Index: p.RootIndex}
@@ -131,28 +163,5 @@ func (p *Peer) handleRequestMTIndexRequest(s net.Stream, ir comm.IndexRequest) e
 	if n, err := s.Write(raw); n != len(raw) || err != nil {
 		return errors.New("Error writing to steam")
 	}
-	return nil
-}
-
-func (p *Peer) handleRequestMTIndexContent(s net.Stream, ir *comm.IndexContent) error {
-	s.Close()
-	if !p.waiting {
-		return errors.New("Unexpected index received")
-	}
-	i := p.RootIndex
-	ni := &ir.Index
-	comparison := i.Compare(ni)
-	for _, path := range comparison.Deletions {
-		// TODO: delete path
-		os.Remove(path)
-	}
-	stack := newFileStack()
-	for _, sum := range comparison.Additions {
-		stack.push(sum)
-	}
-	p.stack.iterFile()
-
-	// TODO: while stack is not empty, request and update files of stack
-
 	return nil
 }

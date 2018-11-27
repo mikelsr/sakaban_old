@@ -21,10 +21,12 @@ import (
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
-func createTestPeers() (*Peer, *Peer) {
+func createTestPeers() (*Peer, *Peer, *Peer) {
 	p1, _ := NewPeer()
 	p2, _ := NewPeer()
+	p3, _ := NewPeer()
 
+	// p1
 	addr, _ := multiaddr.NewMultiaddr(testListenMultiAddr1)
 	options := []libp2p.Option{
 		libp2p.ListenAddrs(addr), // listeing multiaddr
@@ -33,6 +35,7 @@ func createTestPeers() (*Peer, *Peer) {
 	p1.Host = h
 	p1.Host.SetStreamHandler(protocolID, p1.HandleStream)
 
+	// p2
 	addr, _ = multiaddr.NewMultiaddr(testListenMultiAddr2)
 	options = []libp2p.Option{
 		libp2p.ListenAddrs(addr), // listeing multiaddr
@@ -40,6 +43,15 @@ func createTestPeers() (*Peer, *Peer) {
 	h, _ = libp2p.New(context.Background(), options...)
 	p2.Host = h
 	p2.Host.SetStreamHandler(protocolID, p2.HandleStream)
+
+	// p3
+	addr, _ = multiaddr.NewMultiaddr(testListenMultiAddr3)
+	options = []libp2p.Option{
+		libp2p.ListenAddrs(addr), // listeing multiaddr
+	}
+	h, _ = libp2p.New(context.Background(), options...)
+	p3.Host = h
+	p3.Host.SetStreamHandler(protocolID, p3.HandleStream)
 
 	c1 := Contact{
 		Addr:      testListenMultiAddr1,
@@ -51,19 +63,29 @@ func createTestPeers() (*Peer, *Peer) {
 		PeerID:    p2.Host.ID().Pretty(),
 		RSAPubKEy: auth.PrintPubKey(p2.PubKey),
 	}
+	c3 := Contact{
+		Addr:      testListenMultiAddr3,
+		PeerID:    p3.Host.ID().Pretty(),
+		RSAPubKEy: auth.PrintPubKey(p3.PubKey),
+	}
 	p1.Contacts = []Contact{c2}
-	p2.Contacts = []Contact{c1}
+	p2.Contacts = []Contact{c1, c3}
 
 	p1.Host.Peerstore().AddAddr(c2.ID(), c2.MultiAddr(), pstore.PermanentAddrTTL)
 	p2.Host.Peerstore().AddAddr(c1.ID(), c1.MultiAddr(), pstore.PermanentAddrTTL)
+	p2.Host.Peerstore().AddAddr(c3.ID(), c3.MultiAddr(), pstore.PermanentAddrTTL)
 
 	p1.RootDir = testPeerRootDir
 	p2.RootDir = testPeerRootDir
+	p3.RootDir = testPeerRootDir
 	p1.ReloadIndex()
+	i3, _ := fs.MakeIndex()
+	p3.RootIndex = *i3
 
 	p1.Register()
 	p2.Register()
-	return p1, p2
+	p3.Register()
+	return p1, p2, p3
 }
 
 func TestMain(m *testing.M) {
@@ -89,12 +111,16 @@ func TestMain(m *testing.M) {
 	// create and run test broker
 	testBroker = *broker.NewBroker()
 	go testBroker.ListenAndServe(testBrokerIP, testBrokerPort)
-	testIntPeer1, testIntPeer2 = createTestPeers()
+	testIntPeer1, testIntPeer2, testIntPeer3 = createTestPeers()
+
+	// cleanup
+	defer testIntPeer1.Host.Close()
+	defer testIntPeer2.Host.Close()
+	defer testIntPeer3.Host.Close()
+	defer os.RemoveAll(testDir)
 
 	// run tests
 	m.Run()
-	// cleanup
-	os.RemoveAll(testDir)
 }
 
 func TestImport(t *testing.T) {
@@ -132,7 +158,7 @@ func TestPeer_ConnectTo(t *testing.T) {
 
 	// create valid peer listening in unused addr
 	p, _ = NewPeer()
-	addr, _ := multiaddr.NewMultiaddr(testListenMultiAddr3)
+	addr, _ := multiaddr.NewMultiaddr(testListenMultiAddrAux)
 	options := []libp2p.Option{
 		libp2p.ListenAddrs(addr), // listeing multiaddr
 	}
@@ -181,7 +207,7 @@ func TestPeer_HandleStream(t *testing.T) {
 	for err != nil {
 		// create valid peer listening in unused addr
 		p, _ := NewPeer()
-		addr, _ := multiaddr.NewMultiaddr(testListenMultiAddr3)
+		addr, _ := multiaddr.NewMultiaddr(testListenMultiAddrAux)
 		options := []libp2p.Option{
 			libp2p.ListenAddrs(addr), // listeing multiaddr
 		}
