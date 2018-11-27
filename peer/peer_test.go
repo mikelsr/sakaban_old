@@ -21,10 +21,11 @@ import (
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
-func createTestPeers() (*Peer, *Peer, *Peer) {
+func createTestPeers() (*Peer, *Peer, *Peer, *Peer) {
 	p1, _ := NewPeer()
 	p2, _ := NewPeer()
 	p3, _ := NewPeer()
+	p4, _ := NewPeer()
 
 	// p1
 	addr, _ := multiaddr.NewMultiaddr(testListenMultiAddr1)
@@ -53,6 +54,15 @@ func createTestPeers() (*Peer, *Peer, *Peer) {
 	p3.Host = h
 	p3.Host.SetStreamHandler(protocolID, p3.HandleStream)
 
+	// p4
+	addr, _ = multiaddr.NewMultiaddr(testListenMultiAddr4)
+	options = []libp2p.Option{
+		libp2p.ListenAddrs(addr), // listeing multiaddr
+	}
+	h, _ = libp2p.New(context.Background(), options...)
+	p4.Host = h
+	p4.Host.SetStreamHandler(protocolID, p4.HandleStream)
+
 	c1 := Contact{
 		Addr:      testListenMultiAddr1,
 		PeerID:    p1.Host.ID().Pretty(),
@@ -63,29 +73,35 @@ func createTestPeers() (*Peer, *Peer, *Peer) {
 		PeerID:    p2.Host.ID().Pretty(),
 		RSAPubKEy: auth.PrintPubKey(p2.PubKey),
 	}
-	c3 := Contact{
-		Addr:      testListenMultiAddr3,
-		PeerID:    p3.Host.ID().Pretty(),
-		RSAPubKEy: auth.PrintPubKey(p3.PubKey),
+	c4 := Contact{
+		Addr:      testListenMultiAddr4,
+		PeerID:    p4.Host.ID().Pretty(),
+		RSAPubKEy: auth.PrintPubKey(p4.PubKey),
 	}
+
 	p1.Contacts = []Contact{c2}
-	p2.Contacts = []Contact{c1, c3}
+	p2.Contacts = []Contact{c1}
+	p3.Contacts = []Contact{c4}
 
 	p1.Host.Peerstore().AddAddr(c2.ID(), c2.MultiAddr(), pstore.PermanentAddrTTL)
 	p2.Host.Peerstore().AddAddr(c1.ID(), c1.MultiAddr(), pstore.PermanentAddrTTL)
-	p2.Host.Peerstore().AddAddr(c3.ID(), c3.MultiAddr(), pstore.PermanentAddrTTL)
+	p3.Host.Peerstore().AddAddr(c4.ID(), c4.MultiAddr(), pstore.PermanentAddrTTL)
 
 	p1.RootDir = testPeerRootDir
 	p2.RootDir = testPeerRootDir
 	p3.RootDir = testPeerRootDir
+	p4.RootDir = testPeerRootDir
+
 	p1.ReloadIndex()
-	i3, _ := fs.MakeIndex()
-	p3.RootIndex = *i3
+	p3.ReloadIndex()
+	i4, _ := fs.MakeIndex()
+	p4.RootIndex = *i4
 
 	p1.Register()
 	p2.Register()
 	p3.Register()
-	return p1, p2, p3
+	p4.Register()
+	return p1, p2, p3, p4
 }
 
 // testListenAndServe stops the tests whenever broker.ListenAndServe fails
@@ -120,7 +136,7 @@ func TestMain(m *testing.M) {
 	testBroker = *broker.NewBroker()
 	go testListenAndServe(&testBroker, testBrokerIP, testBrokerPort)
 
-	testIntPeer1, testIntPeer2, testIntPeer3 = createTestPeers()
+	testIntPeer1, testIntPeer2, testIntPeer3, testIntPeer4 = createTestPeers()
 
 	// cleanup
 	defer os.RemoveAll(testDir)

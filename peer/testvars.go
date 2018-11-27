@@ -23,10 +23,12 @@ var (
 	testIntPeer1           *Peer // used for integration testing
 	testIntPeer2           *Peer // used for integration testing
 	testIntPeer3           *Peer // used for integration testing
+	testIntPeer4           *Peer // used for integration testing
 	testPeer               Peer
 	testPeerRootDir        = fmt.Sprintf("%s/res", fs.ProjectPath())
 	testListenMultiAddr1   = "/ip4/0.0.0.0/tcp/3011"
 	testListenMultiAddr2   = "/ip4/0.0.0.0/tcp/3012"
 	testListenMultiAddr3   = "/ip4/0.0.0.0/tcp/3013"
-	testListenMultiAddrAux = "/ip4/0.0.0.0/tcp/3014"
+	testListenMultiAddr4   = "/ip4/0.0.0.0/tcp/3014"
+	testListenMultiAddrAux = "/ip4/0.0.0.0/tcp/3015"
 )

@@ -112,6 +112,7 @@ func (p *Peer) HandleStream(s net.Stream) {
 	if err != nil {
 		panic(err)
 	}
+
 	recv, err := msg.Recv(buf)
 	if err != nil {
 		panic(err)
