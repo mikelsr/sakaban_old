@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"bitbucket.org/mikelsr/sakaban-broker/auth"
 	"bitbucket.org/mikelsr/sakaban/fs"
 	"bitbucket.org/mikelsr/sakaban/peer/comm"
 	"github.com/satori/go.uuid"
@@ -25,9 +26,9 @@ func TestPeer_HandleRequestMTBlockContent(t *testing.T) {
 		Parent: "",
 		Path:   fileName,
 		Blocks: []uint64{1, 1},
-	})
+	}, &testIntPeer1.Contacts[0])
 	// push and iter nil file to generate tmpFile for first summary
-	testIntPeer1.stack.push(nil)
+	testIntPeer1.stack.push(nil, nil)
 	testIntPeer1.stack.iterFile()
 
 	content1 := make([]byte, fs.BlockSize)
@@ -138,6 +139,8 @@ func TestPeer_HandleRequestMTBlockRequest(t *testing.T) {
 }
 
 func TestPeer_HandleRequestMTIndexContent(t *testing.T) {
+	c, _ := testIntPeer4.RequestPeer(auth.PrintPubKey(testIntPeer3.PubKey))
+	testIntPeer4.Contacts = []Contact{*c}
 	testIntPeer4.waiting = true
 	ic := comm.IndexContent{Index: testIntPeer3.RootIndex}
 	s, err := testIntPeer3.ConnectTo(testIntPeer3.Contacts[0 /* testIntPeer4 */])

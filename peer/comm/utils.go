@@ -41,10 +41,9 @@ func MessageTypeFromBytes(bytes []byte) (*MessageType, error) {
 // RecvMessage reads all the content of a Message from a net.String
 // UNTESTED
 func RecvMessage(s *bufio.Reader, msg Message) ([]byte, error) {
-	var buf []byte
 
 	// FIXME: some test failed due to `make` blocking execution?!?!?!
-	buf = make([]byte, bufferSize)
+	buf := make([]byte, bufferSize)
 
 	// receive initial bytes
 	n, err := s.Read(buf)

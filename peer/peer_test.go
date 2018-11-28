@@ -73,6 +73,11 @@ func createTestPeers() (*Peer, *Peer, *Peer, *Peer) {
 		PeerID:    p2.Host.ID().Pretty(),
 		RSAPubKEy: auth.PrintPubKey(p2.PubKey),
 	}
+	c3 := Contact{
+		Addr:      testListenMultiAddr3,
+		PeerID:    p3.Host.ID().Pretty(),
+		RSAPubKEy: auth.PrintPubKey(p3.PubKey),
+	}
 	c4 := Contact{
 		Addr:      testListenMultiAddr4,
 		PeerID:    p4.Host.ID().Pretty(),
@@ -82,10 +87,12 @@ func createTestPeers() (*Peer, *Peer, *Peer, *Peer) {
 	p1.Contacts = []Contact{c2}
 	p2.Contacts = []Contact{c1}
 	p3.Contacts = []Contact{c4}
+	p4.Contacts = []Contact{c3}
 
 	p1.Host.Peerstore().AddAddr(c2.ID(), c2.MultiAddr(), pstore.PermanentAddrTTL)
 	p2.Host.Peerstore().AddAddr(c1.ID(), c1.MultiAddr(), pstore.PermanentAddrTTL)
 	p3.Host.Peerstore().AddAddr(c4.ID(), c4.MultiAddr(), pstore.PermanentAddrTTL)
+	p4.Host.Peerstore().AddAddr(c3.ID(), c3.MultiAddr(), pstore.PermanentAddrTTL)
 
 	p1.RootDir = testPeerRootDir
 	p2.RootDir = testPeerRootDir

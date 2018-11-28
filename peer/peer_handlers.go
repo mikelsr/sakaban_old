@@ -48,7 +48,14 @@ func (p *Peer) handleRequestMTBlockContent(s net.Stream, bc *comm.BlockContent) 
 		return errors.New("Didn't expect any blocks")
 	}
 
-	f := p.stack.peek()
+	f, c := p.stack.peek()
+
+	// block comes from expected peer
+	if !c.MultiAddr().Equal(p.stack.tmpFileProvider.MultiAddr()) {
+		return errors.New("Block from unexpected peer")
+	}
+
+	// block belongs to expected file
 	fid, eid := bc.FileID.String(), f.ID
 
 	if fid != eid {
@@ -128,6 +135,19 @@ func (p *Peer) handleRequestMTIndexContent(s net.Stream, ir *comm.IndexContent) 
 	if !p.waiting {
 		return errors.New("Unexpected index received")
 	}
+
+	var contact *Contact
+	for _, c := range p.Contacts {
+		if c.MultiAddr().Equal(s.Conn().LocalMultiaddr()) ||
+			c.MultiAddr().Equal(s.Conn().RemoteMultiaddr()) {
+			contact = &c
+			break
+		}
+	}
+	if contact == nil {
+		return errors.New("Unknown contact")
+	}
+
 	i := p.RootIndex
 	ni := &ir.Index
 	comparison := i.Compare(ni)
@@ -137,9 +157,9 @@ func (p *Peer) handleRequestMTIndexContent(s net.Stream, ir *comm.IndexContent) 
 	}
 	stack := newFileStack()
 	for _, sum := range comparison.Additions {
-		stack.push(sum)
+		stack.push(sum, contact)
 	}
-	stack.push(nil)
+	stack.push(nil, nil)
 	stack.iterFile()
 
 	p.stack = *stack
