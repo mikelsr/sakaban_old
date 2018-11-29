@@ -24,6 +24,7 @@ import (
 	host "github.com/libp2p/go-libp2p-host"
 	net "github.com/libp2p/go-libp2p-net"
 	p2peer "github.com/libp2p/go-libp2p-peer"
+	uuid "github.com/satori/go.uuid"
 
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
@@ -255,6 +256,28 @@ func (p *Peer) ReloadIndex() {
 	p.RootIndex = *scanner.NewIndex
 }
 
+// RequestBlock requests a block from a beer and writes it to c
+//	blockN:		index number of the block
+//	fileID:		id of the file the block belongs to
+//	filepath:	path of the file the block belongs
+//	provider:	contact to request the block from
+//	c:		receiving channel
+func (p *Peer) RequestBlock(blockN uint8, fileID uuid.UUID, filepath string, provider Contact, c chan error) {
+	br := comm.BlockRequest{
+		BlockN:   blockN,
+		FileID:   fileID,
+		FilePath: filepath,
+	}
+	s, err := p.ConnectTo(provider)
+	if err != nil {
+		c <- err
+	}
+	if _, err = s.Write(br.Dump()); err != nil {
+		c <- err
+	}
+	c <- nil
+}
+
 // RequestPeer obtains info about a peer from a broker given the public key
 // of the peer
 func (p *Peer) RequestPeer(publicKey string) (*Contact, error) {
@@ -292,5 +315,10 @@ func (p *Peer) SetRootDir(dir string) error {
 		return fmt.Errorf("'%s' is not a valid directory", dir)
 	}
 	p.RootDir = dir
+	return nil
+}
+
+// UpdateFromStack requests and updates all the files in p.stack.files
+func (p *Peer) UpdateFromStack() error {
 	return nil
 }

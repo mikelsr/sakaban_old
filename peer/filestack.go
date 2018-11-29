@@ -21,7 +21,7 @@ func newFileStack() *fileStack {
 }
 
 // iterFile loads the next file into f.tmpFile
-func (f *fileStack) iterFile() {
+func (f *fileStack) iterFile() error {
 	_, _, n := f.pop()
 	if n != 0 {
 		newFile, newProvider := f.peek()
@@ -30,6 +30,22 @@ func (f *fileStack) iterFile() {
 		f.tmpFile.Parent, _ = uuid.FromString(newFile.Parent)
 		f.tmpFile.Path = newFile.Path
 		f.tmpFile.Blocks = make([]*fs.Block, len(newFile.Blocks))
+		// load unchanged blocks from local file
+		if _, err := os.Stat(newFile.Path); !os.IsNotExist(err) {
+			localFile, err := fs.MakeFile(newFile.Path)
+			if err != nil {
+				return err
+			}
+			l := uint64(len(localFile.Blocks))
+			for i, n := range newFile.Blocks {
+				if n >= l {
+					break
+				}
+				if n == 0 {
+					f.tmpFile.Blocks[i] = localFile.Blocks[i]
+				}
+			}
+		}
 		f.tmpFileProvider = newProvider
 	} else {
 		f.tmpFile = nil
@@ -37,6 +53,7 @@ func (f *fileStack) iterFile() {
 	}
 	// unlock write mutex
 	f.writeMutex = make(chan bool, 1)
+	return nil
 }
 
 func (f *fileStack) peek() (*fs.Summary, *Contact) {
