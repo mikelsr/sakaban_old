@@ -12,5 +12,7 @@ A p2p file synchronization program developed for academic purposes.
 ---
 
 ## Errors
+
 *	~~Sometimes TestPeer_HandleStream(`peer/peer_test.go`) fails due to `dial backoff`~~
+
 ---
