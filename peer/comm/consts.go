@@ -3,7 +3,7 @@ package comm
 import (
 	"unsafe"
 
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 )
 
 const (
