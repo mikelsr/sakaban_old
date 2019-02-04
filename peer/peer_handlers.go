@@ -95,6 +95,7 @@ func (p *Peer) handleRequestMTBlockContent(s net.Stream, bc *comm.BlockContent) 
 		// write file
 		// TODO: correct permission
 		p.stack.writeFile(0755)
+		// WARNING: should iteration be done manually?
 		// prepare next file
 		p.stack.iterFile()
 	}
