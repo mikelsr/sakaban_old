@@ -26,6 +26,7 @@ func TestPeer_HandleRequestMTBlockContent(t *testing.T) {
 		ID:     fileID.String(),
 		Parent: "",
 		Path:   fileName,
+		Perm:   os.FileMode(0755),
 		Blocks: []uint64{1, 1},
 	}, &testIntPeer1.Contacts[0])
 	// push and iter nil file to generate tmpFile for first summary
@@ -93,6 +94,8 @@ func TestPeer_HandleRequestMTBlockContent(t *testing.T) {
 		t.FailNow()
 	}
 	if f.Blocks, err = f.Slice(); err != nil {
+		log.Printf("\n\n\nHERE\n\n%s\n\n", err)
+
 		fmt.Println(err)
 		t.FailNow()
 	}

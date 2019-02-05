@@ -29,6 +29,7 @@ func (f *fileStack) iterFile() error {
 		f.tmpFile.ID, _ = uuid.FromString(newFile.ID)
 		f.tmpFile.Parent, _ = uuid.FromString(newFile.Parent)
 		f.tmpFile.Path = newFile.Path
+		f.tmpFile.Perm = newFile.Perm
 		f.tmpFile.Blocks = make([]*fs.Block, len(newFile.Blocks))
 		// load unchanged blocks from local file
 		if _, err := os.Stat(newFile.Path); !os.IsNotExist(err) {
@@ -87,8 +88,7 @@ func (f *fileStack) push(s *fs.Summary, p *Contact) {
 }
 
 // write file writes the current file to permanent storage
-func (f *fileStack) writeFile(perm os.FileMode) error {
-	f.tmpFile.Perm = perm
+func (f *fileStack) writeFile() error {
 	if err := f.tmpFile.Write(); err != nil {
 		return err
 	}

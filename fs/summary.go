@@ -1,15 +1,18 @@
 package fs
 
 import (
+	"os"
+
 	"github.com/satori/go.uuid"
 )
 
 // Summary is used to marshal/unmarshal Files to/from JSON files
 type Summary struct {
-	ID     string   `json:"id"`
-	Parent string   `json:"parent"`
-	Path   string   `json:"path"`
-	Blocks []uint64 `json:"blocks"`
+	Blocks []uint64    `json:"blocks"`
+	ID     string      `json:"id"`
+	Parent string      `json:"parent"`
+	Path   string      `json:"path"`
+	Perm   os.FileMode `json:"permission"`
 }
 
 // MakeSummary creates a marshable Summary from a File
@@ -25,6 +28,7 @@ func MakeSummary(f *File) *Summary {
 	for i, b := range f.Blocks {
 		s.Blocks[i] = b.Hash()
 	}
+	s.Perm = f.Perm
 	return &s
 }
 
