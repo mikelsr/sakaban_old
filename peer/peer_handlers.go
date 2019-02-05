@@ -93,8 +93,8 @@ func (p *Peer) handleRequestMTBlockContent(s net.Stream, bc *comm.BlockContent) 
 		// lock write mutex
 		p.stack.writeMutex <- true
 		// write file
-		// TODO: correct permission
-		p.stack.writeFile(0755)
+		p.stack.writeFile()
+		// WARNING: should iteration be done manually?
 		// prepare next file
 		p.stack.iterFile()
 	}

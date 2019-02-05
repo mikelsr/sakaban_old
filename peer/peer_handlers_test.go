@@ -26,6 +26,7 @@ func TestPeer_HandleRequestMTBlockContent(t *testing.T) {
 		ID:     fileID.String(),
 		Parent: "",
 		Path:   fileName,
+		Perm:   os.FileMode(0755),
 		Blocks: []uint64{1, 1},
 	}, &testIntPeer1.Contacts[0])
 	// push and iter nil file to generate tmpFile for first summary
@@ -52,7 +53,6 @@ func TestPeer_HandleRequestMTBlockContent(t *testing.T) {
 
 	// connection to send first block
 	dump := bc1.Dump()
-
 	log.Println("[Test]\tWaiting for Peer 1 to receive first block...")
 	for testIntPeer1.stack.tmpFile.Blocks[0] == nil {
 		// test will timeout if content isn't stored by testIntPeer1
@@ -82,19 +82,20 @@ func TestPeer_HandleRequestMTBlockContent(t *testing.T) {
 		s.Write(dump)
 		time.Sleep(time.Millisecond * 100)
 		s.Close()
-	}
-	log.Println("[Test]\tWaiting for Peer 1 to write file...")
-	for {
+		log.Println("[Test]\tChecking if Peer 1 has written file...")
 		if _, err := os.Stat(fileName); !os.IsNotExist(err) {
 			break
 		}
 	}
+
 	// compare written file to sent file
 	f, err := fs.MakeFile(fileName)
 	if err != nil {
 		t.FailNow()
 	}
 	if f.Blocks, err = f.Slice(); err != nil {
+		log.Printf("\n\n\nHERE\n\n%s\n\n", err)
+
 		fmt.Println(err)
 		t.FailNow()
 	}
