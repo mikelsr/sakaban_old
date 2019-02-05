@@ -94,8 +94,6 @@ func TestPeer_HandleRequestMTBlockContent(t *testing.T) {
 		t.FailNow()
 	}
 	if f.Blocks, err = f.Slice(); err != nil {
-		log.Printf("\n\n\nHERE\n\n%s\n\n", err)
-
 		fmt.Println(err)
 		t.FailNow()
 	}
