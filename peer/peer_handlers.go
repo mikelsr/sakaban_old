@@ -44,60 +44,52 @@ func (p *Peer) handleRequest(s net.Stream, msgType comm.MessageType, msg []byte)
 }
 
 func (p *Peer) handleRequestMTBlockContent(s net.Stream, bc *comm.BlockContent) error {
-	if p.stack.tmpFile == nil {
+	if len(p.fileMap) == 0 {
 		return errors.New("Didn't expect any blocks")
 	}
 
-	f, c := p.stack.peek()
+	eid := bc.FileID.String()
+	requestedFile, found := p.fileMap[eid]
+	if !found {
+		return fmt.Errorf("Didn't expect blocks from file %s", eid)
+	}
+
+	contact := requestedFile.contact
+	file := requestedFile.file
+	summary := requestedFile.summary
 
 	// block comes from expected peer
-	if !c.MultiAddr().Equal(p.stack.tmpFileProvider.MultiAddr()) {
+	if s.Conn().RemotePeer().String() != contact.ID().String() {
 		return errors.New("Block from unexpected peer")
 	}
 
 	// block belongs to expected file
-	fid, eid := bc.FileID.String(), f.ID
-
-	if fid != eid {
-		return fmt.Errorf("File IDs do not match: got %s expected %s", fid, eid)
+	if summary.ID != eid {
+		return fmt.Errorf("File IDs do not match: got %s expected %s",
+			file.ID.String(), eid)
 	}
 
-	if bc.BlockN > uint8(len(f.Blocks)) {
-		return fmt.Errorf("Block index out of range: max is %d got %d", len(f.Blocks), bc.BlockN)
+	if bc.BlockN > uint8(len(summary.Blocks)) {
+		return fmt.Errorf("Block index out of range: max is %d got %d",
+			len(file.Blocks), bc.BlockN)
 	}
 
-	if f.Blocks[bc.BlockN] == 0 {
+	if summary.Blocks[bc.BlockN] == 0 {
 		return fmt.Errorf("Block %d was unchanged", bc.BlockN)
 	}
 
-	p.stack.tmpFile.Blocks[bc.BlockN] = &fs.Block{Content: bc.Content}
+	file.Blocks[bc.BlockN] = &fs.Block{Content: bc.Content}
 
 	// if file is not complete, return
-	for i := range f.Blocks {
+	for i := range file.Blocks {
 		if i != 0 {
-			if p.stack.tmpFile.Blocks[i] == nil {
+			if file.Blocks[i] == nil {
 				return nil
 			}
 		}
 	}
-
-	// if file is complete
-	select {
-	// another routine is writing the file
-	case <-p.stack.writeMutex:
-		// keep write mutex locked
-		p.stack.writeMutex <- true
-		break
-	// no other routine is writing the file
-	default:
-		// lock write mutex
-		p.stack.writeMutex <- true
-		// write file
-		p.stack.writeFile()
-		// WARNING: should iteration be done manually?
-		// prepare next file
-		p.stack.iterFile()
-	}
+	file.Write()
+	p.fileMap[file.ID.String()] = nil
 	return nil
 }
 
@@ -155,16 +147,16 @@ func (p *Peer) handleRequestMTIndexContent(s net.Stream, ir *comm.IndexContent) 
 		// TODO: delete path
 		os.Remove(path)
 	}
-	stack := newFileStack()
+
 	for _, sum := range comparison.Additions {
-		stack.push(sum, contact)
+		requestedFile, err := MakeRequestedFile(sum, contact)
+		if err != nil {
+			return err
+		}
+		p.fileMap[sum.ID] = requestedFile
 	}
-	stack.push(nil, nil)
-	stack.iterFile()
 
-	p.stack = *stack
-
-	// TODO: while stack is not empty, request and update files of stack
+	// TODO: fileMap is not empty, request and update files of stack
 	p.waiting = false
 	return nil
 }
