@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 )
 
 // File represents a file
@@ -55,6 +55,7 @@ func MakeFileFromSummary(s *Summary) (*File, error) {
 			return nil, fmt.Errorf("Invalid parent ID: %s", s.ID)
 		}
 	}
+	f.Perm = s.Perm
 	return f, nil
 }
 

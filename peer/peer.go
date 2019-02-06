@@ -32,11 +32,12 @@ import (
 // Peer represents an individual device
 // TODO: store what peers have been already added to host.PeerStore
 type Peer struct {
-	BrokerIP   string    // IPv4 address of the host
-	BrokerPort int       // TCP port of the host
-	Contacts   []Contact `json:"contacts"` // List of trusted contacts
-	Host       host.Host `json:"-"`        // Host is the libp2p host
-	waiting    bool      /* true if an index was requested and has not yet been
+	BrokerIP   string                    // IPv4 address of the host
+	BrokerPort int                       // TCP port of the host
+	Contacts   []Contact                 `json:"contacts"` // List of trusted contacts
+	fileMap    map[string]*RequestedFile // Expected files mapped by fileID
+	Host       host.Host                 `json:"-"` // Host is the libp2p host
+	waiting    bool                      /* true if an index was requested and has not yet been
 	received */
 
 	// PrvKey and PubKey are used to verify the identity of the Peer
@@ -44,9 +45,8 @@ type Peer struct {
 	PubKey *rsa.PublicKey  `json:"-"`
 
 	// fs
-	RootDir   string    `json:"root_dir"` // Directory to be synchronized
-	RootIndex fs.Index  // Index of RootDir
-	stack     fileStack // files being updated
+	RootDir   string   `json:"root_dir"` // Directory to be synchronized
+	RootIndex fs.Index // Index of RootDir
 }
 
 // BrokerAddr returns the formatted address of the broker assigned to the peer
@@ -185,6 +185,7 @@ func NewPeer() (*Peer, error) {
 		Host:       h,
 		PrvKey:     prv,
 		PubKey:     &prv.PublicKey,
+		fileMap:    make(map[string]*RequestedFile),
 	}, nil
 }
 
@@ -315,10 +316,5 @@ func (p *Peer) SetRootDir(dir string) error {
 		return fmt.Errorf("'%s' is not a valid directory", dir)
 	}
 	p.RootDir = dir
-	return nil
-}
-
-// UpdateFromStack requests and updates all the files in p.stack.files
-func (p *Peer) UpdateFromStack() error {
 	return nil
 }

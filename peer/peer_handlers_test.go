@@ -21,17 +21,16 @@ import (
 func TestPeer_HandleRequestMTBlockContent(t *testing.T) {
 	fileName := filepath.Join(testDir, "testfile")
 	fileID, _ := uuid.NewV4()
-	testIntPeer1.stack = *newFileStack()
-	testIntPeer1.stack.push(&fs.Summary{
+	fid := fileID.String()
+
+	requestedFile1, _ := MakeRequestedFile(&fs.Summary{
 		ID:     fileID.String(),
 		Parent: "",
 		Path:   fileName,
 		Perm:   os.FileMode(0755),
 		Blocks: []uint64{1, 1},
-	}, &testIntPeer1.Contacts[0])
-	// push and iter nil file to generate tmpFile for first summary
-	testIntPeer1.stack.push(nil, nil)
-	testIntPeer1.stack.iterFile()
+	}, &testIntPeer1.Contacts[0 /* testIntPeer2 */])
+	testIntPeer1.fileMap[fid] = requestedFile1
 
 	content1 := make([]byte, fs.BlockSize)
 	content2 := make([]byte, fs.BlockSize)
@@ -54,7 +53,7 @@ func TestPeer_HandleRequestMTBlockContent(t *testing.T) {
 	// connection to send first block
 	dump := bc1.Dump()
 	log.Println("[Test]\tWaiting for Peer 1 to receive first block...")
-	for testIntPeer1.stack.tmpFile.Blocks[0] == nil {
+	for testIntPeer1.fileMap[fid].file.Blocks[0] == nil {
 		// test will timeout if content isn't stored by testIntPeer1
 		s, err := testIntPeer2.ConnectTo(testIntPeer2.Contacts[0 /* testIntPeer1 */])
 		if err != nil {
@@ -66,14 +65,14 @@ func TestPeer_HandleRequestMTBlockContent(t *testing.T) {
 	}
 
 	// ensure that blocks are equal
-	if !bytes.Equal(testIntPeer1.stack.tmpFile.Blocks[0].Content, bc1.Content) {
+	if !bytes.Equal(testIntPeer1.fileMap[fid].file.Blocks[0].Content, bc1.Content) {
 		t.FailNow()
 	}
 
 	// connection to send second block
 	dump = bc2.Dump()
 	log.Println("[Test]\tWaiting for Peer 1 to receive second block...")
-	for testIntPeer1.stack.tmpFile.Blocks[1] == nil {
+	for testIntPeer1.fileMap[fid].file.Blocks[1] == nil {
 		// test will timeout if content isn't stored by testIntPeer1
 		s, err := testIntPeer2.ConnectTo(testIntPeer2.Contacts[0 /* testIntPeer1 */])
 		if err != nil {
@@ -151,7 +150,7 @@ func TestPeer_HandleRequestMTIndexContent(t *testing.T) {
 	ic := comm.IndexContent{Index: testIntPeer3.RootIndex}
 	dump := ic.Dump()
 	// connect to peer 4 and send index until success or timeout
-	for testIntPeer4.stack.tmpFile == nil {
+	for len(testIntPeer4.fileMap) == 0 {
 		s, err := testIntPeer3.ConnectTo(testIntPeer3.Contacts[0 /* testIntPeer4 */])
 		if err != nil {
 			t.FailNow()
